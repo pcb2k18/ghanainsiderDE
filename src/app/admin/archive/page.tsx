@@ -11,6 +11,7 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 
 interface ImportRecord {
@@ -131,14 +132,20 @@ export default function ArchiveImportPage() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="flex items-center gap-3 text-3xl font-bold text-surface-100">
-          <Archive className="h-8 w-8 text-brand-400" />
-          Archive.org Import
-        </h1>
-        <p className="mt-2 text-surface-400">
-          Recover your old posts from Archive.org Wayback Machine
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-surface-100">
+            <Archive className="h-8 w-8 text-brand-400" />
+            Archive.org Import
+          </h1>
+          <p className="mt-2 text-surface-400">
+            Recover your old posts from Archive.org Wayback Machine
+          </p>
+        </div>
+        <Link href="/admin/archive/bulk" className="btn-secondary flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          Bulk Import
+        </Link>
       </div>
 
       {/* Alerts */}
