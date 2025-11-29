@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { revalidatePath } from 'next/cache';
 
 // GET all posts or single post by ID
 export async function GET(request: NextRequest) {
@@ -25,7 +26,13 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (error) throw error;
-      return NextResponse.json({ success: true, data });
+      return NextResponse.json({ success: true, data }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
     }
 
     // Get all posts with filters
@@ -50,7 +57,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) throw error;
-    
+
     return NextResponse.json({
       success: true,
       data,
@@ -58,6 +65,12 @@ export async function GET(request: NextRequest) {
         total: count,
         limit,
         offset,
+      },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {
@@ -156,6 +169,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Revalidate homepage to show new post
+    revalidatePath('/de');
+    revalidatePath('/de', 'page');
+
     return NextResponse.json({ success: true, data: post }, { status: 201 });
   } catch (error) {
     console.error('POST create error:', error);
@@ -217,6 +234,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Revalidate homepage to reflect updated post
+    revalidatePath('/de');
+    revalidatePath('/de', 'page');
+    // Also revalidate the specific post page
+    if (post?.slug) {
+      revalidatePath(`/de/${post.slug}`);
+    }
+
     return NextResponse.json({ success: true, data: post });
   } catch (error) {
     console.error('PUT update error:', error);
@@ -262,6 +287,10 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Revalidate homepage to remove deleted post
+    revalidatePath('/de');
+    revalidatePath('/de', 'page');
 
     return NextResponse.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
