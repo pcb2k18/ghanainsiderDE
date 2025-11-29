@@ -55,8 +55,8 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
     const sentences = textContent.match(/[^.!?]+[.!?]+/g) || [];
     const excerpt = sentences.slice(0, 3).join(' ').substring(0, 300).trim();
 
-    // 4. Generate slug from title
-    const slug = generateSlug(title);
+    // 4. Extract slug from original URL (not generated from title!)
+    const slug = extractSlugFromUrl(originalUrl);
 
     // 5. Determine category from URL or content
     const category_slug = detectCategory(originalUrl, textContent);
@@ -79,24 +79,24 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
 }
 
 /**
- * Generate URL-friendly slug from title
+ * Extract slug from the original URL
+ * URL format: https://web.archive.org/web/TIMESTAMP/https://ghanainsider.com/de/index.php/SLUG/
+ * Or: https://ghanainsider.com/de/index.php/SLUG/
  */
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    // Handle German characters
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    // Remove special characters
-    .replace(/[^a-z0-9\s-]/g, '')
-    // Replace spaces with hyphens
-    .replace(/\s+/g, '-')
-    // Remove duplicate hyphens
-    .replace(/-+/g, '-')
-    // Trim hyphens
-    .replace(/^-+|-+$/g, '');
+function extractSlugFromUrl(url: string): string {
+  // Remove archive.org prefix if present
+  let cleanUrl = url.replace(/https:\/\/web\.archive\.org\/web\/\d+\//, '');
+
+  // Extract slug from /de/index.php/SLUG/ or /de/SLUG/
+  const match = cleanUrl.match(/\/de\/(?:index\.php\/)?([^\/\?#]+)/);
+
+  if (match && match[1]) {
+    return match[1].toLowerCase().trim();
+  }
+
+  // Fallback: generate from URL path
+  const pathParts = cleanUrl.split('/').filter(Boolean);
+  return pathParts[pathParts.length - 1] || 'imported-post';
 }
 
 /**
