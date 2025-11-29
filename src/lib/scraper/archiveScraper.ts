@@ -83,23 +83,27 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
   }
 
   // Fallback if no article found
-  throw new Error('Could not find article content in HTML');
+  throw new Error('No article content found in the HTML. The page structure may be different or the content is missing.');
 }
 
 /**
  * Extract slug from the original URL
  * URL format: https://web.archive.org/web/TIMESTAMP/https://ghanainsider.com/de/index.php/SLUG/
  * Or: https://ghanainsider.com/de/index.php/SLUG/
+ *
+ * IMPORTANT: Preserves index.php/ in the slug if present
+ * Example: /de/index.php/post-name/ → index.php/post-name
  */
 function extractSlugFromUrl(url: string): string {
   // Remove archive.org prefix if present
   let cleanUrl = url.replace(/https:\/\/web\.archive\.org\/web\/\d+\//, '');
 
-  // Extract slug from /de/index.php/SLUG/ or /de/SLUG/
-  const match = cleanUrl.match(/\/de\/(?:index\.php\/)?([^\/\?#]+)/);
+  // Extract everything after /de/ (including index.php/ if present)
+  const match = cleanUrl.match(/\/de\/(.+?)(?:\/|$)/);
 
   if (match && match[1]) {
-    return match[1].toLowerCase().trim();
+    // Remove trailing slash and lowercase
+    return match[1].replace(/\/$/, '').toLowerCase().trim();
   }
 
   // Fallback: generate from URL path
