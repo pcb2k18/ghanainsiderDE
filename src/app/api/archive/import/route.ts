@@ -51,8 +51,33 @@ export async function POST(request: NextRequest) {
 
     const htmlContent = await response.text();
 
-    // Process with AI
+    // Process with scraper (NO AI - saves costs!)
     const extractedContent = await importFromArchive(htmlContent, originalUrl);
+
+    // Check if post with this slug already exists
+    const { data: existingPost } = await supabase
+      .from('posts')
+      .select('id, title, slug, status')
+      .eq('slug', extractedContent.slug)
+      .single();
+
+    if (existingPost) {
+      // Post already exists - update import record and return
+      await supabase
+        .from('archive_imports')
+        .update({
+          import_status: 'skipped' as const,
+          post_id: existingPost.id,
+          error_message: 'Post with this slug already exists',
+        })
+        .eq('id', importRecord.id);
+
+      return NextResponse.json({
+        success: false,
+        message: `Post already exists: "${existingPost.title}" (${existingPost.slug})`,
+        existing_post: existingPost,
+      }, { status: 409 }); // 409 Conflict
+    }
 
     // Get category ID
     const { data: category } = await supabase
