@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { buildPrompt, SYSTEM_PROMPT, buildArchiveImportPrompt } from './prompts';
+import { buildPrompt, SYSTEM_PROMPT } from './prompts';
 import { AIFormattedContent } from '../supabase/types';
 import { createServerClient } from '../supabase/client';
+import { scrapeArchiveHTML } from '../scraper/archiveScraper';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -104,42 +105,59 @@ export async function formatContentWithAI(
   }
 }
 
+/**
+ * Import from archive.org WITHOUT using AI
+ * Uses HTML scraping to extract content and save API costs
+ */
 export async function importFromArchive(
   htmlContent: string,
   originalUrl: string
 ): Promise<ArchiveImportResult> {
-  const userPrompt = buildArchiveImportPrompt(htmlContent, originalUrl);
-  const model = await getClaudeModel();
-
   try {
-    const message = await anthropic.messages.create({
-      model,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-      ],
-      system: 'You are a content extraction specialist. Extract and structure content from archived HTML pages. Always respond with valid JSON.',
-    });
+    const scraped = scrapeArchiveHTML(htmlContent, originalUrl);
 
-    const responseText = message.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-
-    let jsonString = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonString = jsonMatch[1].trim();
-    }
-
-    return JSON.parse(jsonString) as ArchiveImportResult;
+    return {
+      title: scraped.title,
+      content: scraped.content,
+      excerpt: scraped.excerpt,
+      meta_title: scraped.title.substring(0, 60),
+      meta_description: scraped.excerpt.substring(0, 155),
+      slug: scraped.slug,
+      category_slug: scraped.category_slug,
+      published_at: scraped.published_at,
+      keywords: extractKeywords(scraped.title, scraped.content),
+    };
   } catch (error) {
     console.error('Archive import error:', error);
     throw new Error(`Failed to import from archive: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Extract keywords from title and content
+ */
+function extractKeywords(title: string, content: string): string[] {
+  const keywords: string[] = [];
+
+  // Extract from title
+  const titleWords = title
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 3);
+
+  keywords.push(...titleWords.slice(0, 3));
+
+  // Common German keywords to look for
+  const commonKeywords = ['tod', 'hochzeit', 'biografie', 'karriere', 'vermögen', 'familie'];
+  const contentLower = content.toLowerCase();
+
+  for (const keyword of commonKeywords) {
+    if (contentLower.includes(keyword) && !keywords.includes(keyword)) {
+      keywords.push(keyword);
+    }
+  }
+
+  return keywords.slice(0, 5);
 }
 
 export async function improveContent(
