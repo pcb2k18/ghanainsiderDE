@@ -1,0 +1,164 @@
+import * as cheerio from 'cheerio';
+
+export interface ScrapedArchiveData {
+  title: string;
+  content: string;
+  excerpt: string;
+  slug: string;
+  category_slug: string;
+  published_at: string | null;
+}
+
+/**
+ * Scrapes archive.org HTML and extracts article data
+ * WITHOUT using AI - pure HTML parsing
+ */
+export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArchiveData {
+  const $ = cheerio.load(html);
+
+  // 1. Extract title from H1
+  let title = '';
+  const h1Element = $('h1.gb-headline.gb-headline-text, h1.entry-title, h1');
+  if (h1Element.length > 0) {
+    title = h1Element.first().text().trim();
+  }
+
+  // 2. Extract article content
+  const articleElement = $('article .entry-content');
+
+  if (articleElement.length > 0) {
+    // Remove unwanted elements
+    articleElement.find('.quads-location').remove(); // Remove all ads
+    articleElement.find('[class*="quads-"]').remove(); // Remove anything with quads in class
+    articleElement.find('#ez-toc-container').remove(); // Remove table of contents
+    articleElement.find('script').remove(); // Remove all scripts
+    articleElement.find('ins.adsbygoogle').remove(); // Remove adsense
+    articleElement.find('iframe').remove(); // Remove iframes
+
+    // Get the cleaned HTML
+    let content = articleElement.html() || '';
+
+    // Clean up archive.org URLs in links
+    content = content.replace(
+      /https:\/\/web\.archive\.org\/web\/\d+\/(https:\/\/ghanainsider\.com\/de\/index\.php\/[^"']+)/g,
+      '$1'
+    );
+
+    // Remove empty paragraphs and extra whitespace
+    content = content
+      .replace(/<p>\s*<\/p>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // 3. Generate excerpt (first 2-3 sentences or 150 chars)
+    const textContent = cheerio.load(content).text();
+    const sentences = textContent.match(/[^.!?]+[.!?]+/g) || [];
+    const excerpt = sentences.slice(0, 3).join(' ').substring(0, 300).trim();
+
+    // 4. Generate slug from title
+    const slug = generateSlug(title);
+
+    // 5. Determine category from URL or content
+    const category_slug = detectCategory(originalUrl, textContent);
+
+    // 6. Extract published date if available
+    const published_at = extractPublishedDate($);
+
+    return {
+      title,
+      content,
+      excerpt: excerpt || textContent.substring(0, 200).trim(),
+      slug,
+      category_slug,
+      published_at,
+    };
+  }
+
+  // Fallback if no article found
+  throw new Error('Could not find article content in HTML');
+}
+
+/**
+ * Generate URL-friendly slug from title
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    // Handle German characters
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    // Remove special characters
+    .replace(/[^a-z0-9\s-]/g, '')
+    // Replace spaces with hyphens
+    .replace(/\s+/g, '-')
+    // Remove duplicate hyphens
+    .replace(/-+/g, '-')
+    // Trim hyphens
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Detect category from URL or content
+ */
+function detectCategory(url: string, content: string): string {
+  const lowercaseUrl = url.toLowerCase();
+  const lowercaseContent = content.toLowerCase();
+
+  // Check URL patterns
+  if (lowercaseUrl.includes('tod') || lowercaseUrl.includes('verstorben') || lowercaseUrl.includes('nachruf')) {
+    return 'tod';
+  }
+  if (lowercaseUrl.includes('hochzeit') || lowercaseUrl.includes('heirat')) {
+    return 'hochzeit';
+  }
+  if (lowercaseUrl.includes('gastbeitrag') || lowercaseUrl.includes('guest')) {
+    return 'gastbeitrag';
+  }
+
+  // Check content patterns
+  if (
+    (lowercaseContent.includes('tod') || lowercaseContent.includes('verstorben')) &&
+    (lowercaseContent.includes('todesursache') || lowercaseContent.includes('nachruf'))
+  ) {
+    return 'tod';
+  }
+  if (
+    lowercaseContent.includes('hochzeit') ||
+    (lowercaseContent.includes('heirat') && lowercaseContent.includes('braut'))
+  ) {
+    return 'hochzeit';
+  }
+
+  // Default to breaking-news
+  return 'breaking-news';
+}
+
+/**
+ * Extract published date from HTML
+ */
+function extractPublishedDate($: cheerio.CheerioAPI): string | null {
+  // Try multiple selectors for date
+  const dateSelectors = [
+    'time[datetime]',
+    'meta[property="article:published_time"]',
+    '.published',
+    '.entry-date',
+  ];
+
+  for (const selector of dateSelectors) {
+    const element = $(selector).first();
+    if (element.length > 0) {
+      const datetime = element.attr('datetime') || element.attr('content') || element.text();
+      if (datetime) {
+        const date = new Date(datetime);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      }
+    }
+  }
+
+  return null;
+}
