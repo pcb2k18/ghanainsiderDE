@@ -10,8 +10,11 @@ import {
   AlertCircle,
   Loader2,
   FileText,
+  User,
 } from 'lucide-react';
 import slugify from 'slugify';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Category {
   id: string;
@@ -19,9 +22,17 @@ interface Category {
   slug: string;
 }
 
+interface Author {
+  id: string;
+  name: string;
+  email: string;
+  is_default: boolean;
+}
+
 export default function NewPostPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,33 +43,45 @@ export default function NewPostPage() {
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [authorId, setAuthorId] = useState('');
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const [postType, setPostType] = useState<'guest_post' | 'manual'>('guest_post');
-  const [authorName, setAuthorName] = useState('');
-  const [authorEmail, setAuthorEmail] = useState('');
+  const [guestAuthorName, setGuestAuthorName] = useState('');
+  const [guestAuthorEmail, setGuestAuthorEmail] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [keywords, setKeywords] = useState('');
-  const [featuredImage, setFeaturedImage] = useState('');
 
   useEffect(() => {
-    fetchCategories();
+    fetchData();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
+      // Fetch categories
+      const catResponse = await fetch('/api/categories');
+      const catData = await catResponse.json();
+      if (catData.success && catData.data) {
+        setCategories(catData.data);
+        if (catData.data.length > 0) {
+          setCategoryId(catData.data[0].id);
+        }
+      }
 
-      if (data.success && data.data) {
-        setCategories(data.data);
-        if (data.data.length > 0) {
-          setCategoryId(data.data[0].id);
+      // Fetch authors
+      const authResponse = await fetch('/api/authors');
+      const authData = await authResponse.json();
+      if (authData.success && authData.data) {
+        setAuthors(authData.data);
+        const defaultAuthor = authData.data.find((a: Author) => a.is_default);
+        if (defaultAuthor) {
+          setAuthorId(defaultAuthor.id);
         }
       }
     } catch (error) {
-      setError('Failed to load categories');
+      setError('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -119,10 +142,11 @@ export default function NewPostPage() {
           excerpt,
           featured_image: featuredImage || null,
           category_id: categoryId || null,
+          author_id: authorId || null,
           status: saveStatus,
           post_type: postType,
-          author_name: authorName || null,
-          author_email: authorEmail || null,
+          author_name: guestAuthorName || null,
+          author_email: guestAuthorEmail || null,
           seo_score: 0,
           seo_metadata: {
             meta_title: metaTitle || title,
@@ -175,10 +199,10 @@ export default function NewPostPage() {
           </Link>
           <h1 className="flex items-center gap-3 text-3xl font-bold text-surface-100">
             <FileText className="h-8 w-8 text-brand-400" />
-            Create Guest Post
+            Create New Post
           </h1>
           <p className="mt-2 text-surface-400">
-            Manually create a new post (for guest posts or manual content)
+            Create a new post with rich text editing
           </p>
         </div>
       </div>
@@ -200,7 +224,7 @@ export default function NewPostPage() {
 
       {/* Form */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Main Content - Left Column */}
+        {/* Main Content - Left Column (2/3) */}
         <div className="col-span-2 space-y-6">
           {/* Title */}
           <div className="card p-6">
@@ -212,7 +236,7 @@ export default function NewPostPage() {
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               placeholder="Enter post title..."
-              className="input"
+              className="input text-lg"
             />
           </div>
 
@@ -241,20 +265,17 @@ export default function NewPostPage() {
             </button>
           </div>
 
-          {/* Content Editor */}
+          {/* Rich Text Editor */}
           <div className="card p-6">
             <label className="mb-3 block text-sm font-medium text-surface-300">
-              Content * (HTML)
+              Content *
             </label>
-            <textarea
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="<h2>Your content here...</h2>"
-              className="textarea min-h-[400px] font-mono text-sm"
+              onChange={setContent}
+              placeholder="Start writing your content..."
+              minHeight="500px"
             />
-            <p className="mt-2 text-sm text-surface-500">
-              Accepts HTML. Use H2 tags for sections.
-            </p>
           </div>
 
           {/* Excerpt */}
@@ -272,7 +293,7 @@ export default function NewPostPage() {
           </div>
         </div>
 
-        {/* Settings - Right Column */}
+        {/* Settings - Right Column (1/3) */}
         <div className="space-y-6">
           {/* Publish Settings */}
           <div className="card p-6">
@@ -312,18 +333,32 @@ export default function NewPostPage() {
                 disabled={saving}
                 className="btn-secondary flex-1"
               >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                <span className="ml-2">Save Draft</span>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
               </button>
               <button
                 onClick={() => handleSave('published')}
                 disabled={saving}
                 className="btn-primary flex-1"
               >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                <span className="ml-2">Publish</span>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
               </button>
             </div>
+          </div>
+
+          {/* Featured Image */}
+          <div className="card p-6">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
+              Featured Image
+            </label>
+            <ImageUpload value={featuredImage} onChange={setFeaturedImage} />
           </div>
 
           {/* Category */}
@@ -346,59 +381,63 @@ export default function NewPostPage() {
                 ))
               )}
             </select>
-            {categories.length === 0 && (
-              <p className="mt-2 text-sm text-amber-400">
-                ⚠️ Please set up categories in the database
-              </p>
-            )}
           </div>
 
-          {/* Author Info */}
-          <div className="card p-6">
-            <h3 className="mb-4 font-semibold text-surface-100">
-              Guest Author (Optional)
-            </h3>
-
-            <div className="mb-4">
-              <label className="mb-2 block text-sm text-surface-400">
-                Author Name
-              </label>
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="John Doe"
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-surface-400">
-                Author Email
-              </label>
-              <input
-                type="email"
-                value={authorEmail}
-                onChange={(e) => setAuthorEmail(e.target.value)}
-                placeholder="john@example.com"
-                className="input"
-              />
-            </div>
-          </div>
-
-          {/* Featured Image */}
+          {/* Author */}
           <div className="card p-6">
             <label className="mb-3 block text-sm font-medium text-surface-300">
-              Featured Image URL
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Author
+              </div>
             </label>
-            <input
-              type="url"
-              value={featuredImage}
-              onChange={(e) => setFeaturedImage(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="input"
-            />
+            <select
+              value={authorId}
+              onChange={(e) => setAuthorId(e.target.value)}
+              className="select"
+            >
+              {authors.map((author) => (
+                <option key={author.id} value={author.id}>
+                  {author.name} {author.is_default && '(Default)'}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* Guest Author Info (for guest posts) */}
+          {postType === 'guest_post' && (
+            <div className="card p-6">
+              <h3 className="mb-4 font-semibold text-surface-100">
+                Guest Author Info
+              </h3>
+
+              <div className="mb-4">
+                <label className="mb-2 block text-sm text-surface-400">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={guestAuthorName}
+                  onChange={(e) => setGuestAuthorName(e.target.value)}
+                  placeholder="John Doe"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-surface-400">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={guestAuthorEmail}
+                  onChange={(e) => setGuestAuthorEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  className="input"
+                />
+              </div>
+            </div>
+          )}
 
           {/* SEO Metadata */}
           <div className="card p-6">
