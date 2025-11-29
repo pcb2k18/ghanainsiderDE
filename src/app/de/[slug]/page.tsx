@@ -159,7 +159,7 @@ export default async function ArticlePage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="mx-auto max-w-4xl px-4 py-12">
+      <article className="mx-auto max-w-7xl px-4 py-12">
         {/* Breadcrumb */}
         <nav className="mb-8">
           <Link
@@ -171,80 +171,90 @@ export default async function ArticlePage({ params }: PageProps) {
           </Link>
         </nav>
 
-        {/* Article Header */}
-        <header className="mb-12">
-          {post.categories && (
-            <Link
-              href={`/de/kategorie/${post.categories.slug}`}
-              className="inline-block rounded-full bg-brand-500/10 px-4 py-1.5 text-sm font-medium text-brand-400 transition-colors hover:bg-brand-500/20"
-            >
-              {post.categories.name}
-            </Link>
-          )}
-
-          <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-surface-100 md:text-5xl">
-            {post.title}
-          </h1>
-
-          {post.excerpt && (
-            <p className="mt-6 text-xl text-surface-400">{post.excerpt}</p>
-          )}
-
-          <div className="mt-8 flex flex-wrap items-center gap-6 border-b border-surface-800 pb-8">
-            <div className="flex items-center gap-2 text-surface-400">
-              <Calendar className="h-4 w-4" />
-              <time dateTime={post.published_at || post.created_at}>
-                {formatDate(post.published_at || post.created_at)}
-              </time>
-            </div>
-            <div className="flex items-center gap-2 text-surface-400">
-              <Clock className="h-4 w-4" />
-              <span>{readingTime} Min. Lesezeit</span>
-            </div>
-            <ShareButton
-              title={post.title}
-              url={`https://ghanainsider.com/de/${post.slug}`}
-            />
-          </div>
-        </header>
-
-        {/* Featured Image */}
-        {post.featured_image && (
-          <div className="relative mb-12 aspect-video w-full overflow-hidden rounded-2xl">
-            <Image
-              src={post.featured_image}
-              alt={post.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-        )}
-
-        {/* Article Content */}
-        <div
-          className="prose-content text-lg"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-
-        {/* Keywords/Tags */}
-        {seo?.keywords && seo.keywords.length > 0 && (
-          <div className="mt-12 border-t border-surface-800 pt-8">
-            <h3 className="mb-4 text-sm font-medium text-surface-400">
-              Verwandte Themen:
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {seo.keywords.map((keyword: string, index: number) => (
-                <span
-                  key={index}
-                  className="rounded-full bg-surface-800 px-4 py-1.5 text-sm text-surface-300"
+        <div className="grid gap-12 lg:grid-cols-[1fr,380px]">
+          {/* Main Content */}
+          <div>
+            {/* Article Header */}
+            <header className="mb-12">
+              {post.categories && (
+                <Link
+                  href={`/de/kategorie/${post.categories.slug}`}
+                  className="inline-block rounded-full bg-brand-500/10 px-4 py-1.5 text-sm font-medium text-brand-400 transition-colors hover:bg-brand-500/20"
                 >
-                  {keyword}
-                </span>
-              ))}
-            </div>
+                  {post.categories.name}
+                </Link>
+              )}
+
+              <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-surface-100 md:text-5xl">
+                {post.title}
+              </h1>
+
+              {post.excerpt && (
+                <p className="mt-6 text-xl text-surface-400">{post.excerpt}</p>
+              )}
+
+              <div className="mt-8 flex flex-wrap items-center gap-6 border-b border-surface-800 pb-8">
+                <div className="flex items-center gap-2 text-surface-400">
+                  <Calendar className="h-4 w-4" />
+                  <time dateTime={post.published_at || post.created_at}>
+                    {formatDate(post.published_at || post.created_at)}
+                  </time>
+                </div>
+                <div className="flex items-center gap-2 text-surface-400">
+                  <Clock className="h-4 w-4" />
+                  <span>{readingTime} Min. Lesezeit</span>
+                </div>
+                <ShareButton
+                  title={post.title}
+                  url={`https://ghanainsider.com/de/${post.slug}`}
+                />
+              </div>
+            </header>
+
+            {/* Article Content */}
+            <div
+              className="prose-content text-lg"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
+
+            {/* Keywords/Tags */}
+            {seo?.keywords && seo.keywords.length > 0 && (
+              <div className="mt-12 border-t border-surface-800 pt-8">
+                <h3 className="mb-4 text-sm font-medium text-surface-400">
+                  Verwandte Themen:
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {seo.keywords.map((keyword: string, index: number) => (
+                    <span
+                      key={index}
+                      className="rounded-full bg-surface-800 px-4 py-1.5 text-sm text-surface-300"
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Sidebar */}
+          <aside className="lg:sticky lg:top-8 lg:self-start">
+            {/* Featured Image */}
+            {post.featured_image && (
+              <div className="mb-8 overflow-hidden rounded-2xl border border-surface-800">
+                <div className="relative aspect-video w-full">
+                  <Image
+                    src={post.featured_image}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
 
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
