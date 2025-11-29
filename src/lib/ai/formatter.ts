@@ -46,6 +46,7 @@ export interface ArchiveImportResult {
   category_slug: string;
   published_at: string | null;
   keywords: string[];
+  featured_image: string | null;
 }
 
 export async function formatContentWithAI(
@@ -126,6 +127,7 @@ export async function importFromArchive(
       category_slug: scraped.category_slug,
       published_at: scraped.published_at,
       keywords: extractKeywords(scraped.title, scraped.content),
+      featured_image: scraped.featured_image,
     };
   } catch (error) {
     console.error('Archive import error:', error);

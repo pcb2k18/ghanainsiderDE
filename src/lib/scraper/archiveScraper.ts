@@ -7,6 +7,7 @@ export interface ScrapedArchiveData {
   slug: string;
   category_slug: string;
   published_at: string | null;
+  featured_image: string | null;
 }
 
 /**
@@ -23,7 +24,10 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
     title = h1Element.first().text().trim();
   }
 
-  // 2. Extract article content
+  // 2. Extract featured image
+  const featured_image = extractFeaturedImage($);
+
+  // 3. Extract article content
   const articleElement = $('article .entry-content');
 
   if (articleElement.length > 0) {
@@ -57,18 +61,18 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
       .replace(/\s+/g, ' ')
       .trim();
 
-    // 3. Generate excerpt (first 2-3 sentences or 150 chars)
+    // 4. Generate excerpt (first 2-3 sentences or 150 chars)
     const textContent = cheerio.load(content).text();
     const sentences = textContent.match(/[^.!?]+[.!?]+/g) || [];
     const excerpt = sentences.slice(0, 3).join(' ').substring(0, 300).trim();
 
-    // 4. Extract slug from original URL (not generated from title!)
+    // 5. Extract slug from original URL (not generated from title!)
     const slug = extractSlugFromUrl(originalUrl);
 
-    // 5. Determine category from URL or content
+    // 6. Determine category from URL or content
     const category_slug = detectCategory(originalUrl, textContent);
 
-    // 6. Use null for published_at - let the system use current date
+    // 7. Use null for published_at - let the system use current date
     // We're treating archive imports as NEW articles, not historical ones
     const published_at = null;
 
@@ -79,11 +83,65 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
       slug,
       category_slug,
       published_at,
+      featured_image,
     };
   }
 
   // Fallback if no article found
   throw new Error('No article content found in the HTML. The page structure may be different or the content is missing.');
+}
+
+/**
+ * Extract featured image from the HTML
+ * Tries multiple sources in priority order:
+ * 1. WordPress featured image (.wp-post-image)
+ * 2. First image in article content
+ * 3. OG image meta tag
+ */
+function extractFeaturedImage($: cheerio.CheerioAPI): string | null {
+  // Try WordPress featured image
+  const wpFeaturedImg = $('img.wp-post-image, img.attachment-post-thumbnail').first();
+  if (wpFeaturedImg.length > 0) {
+    const src = wpFeaturedImg.attr('src');
+    if (src) {
+      return cleanArchiveUrl(src);
+    }
+  }
+
+  // Try first image in article content
+  const contentImg = $('article .entry-content img').first();
+  if (contentImg.length > 0) {
+    const src = contentImg.attr('src');
+    if (src) {
+      return cleanArchiveUrl(src);
+    }
+  }
+
+  // Try OG image meta tag
+  const ogImage = $('meta[property="og:image"]').attr('content');
+  if (ogImage) {
+    return cleanArchiveUrl(ogImage);
+  }
+
+  // No image found
+  return null;
+}
+
+/**
+ * Clean archive.org URLs from image paths
+ */
+function cleanArchiveUrl(url: string): string {
+  // Remove archive.org prefix: https://web.archive.org/web/TIMESTAMP/https://...
+  let cleaned = url.replace(/https?:\/\/web\.archive\.org\/web\/\d+im_\//, '');
+  cleaned = cleaned.replace(/https?:\/\/web\.archive\.org\/web\/\d+\//, '');
+
+  // Ensure it's a full URL
+  if (!cleaned.startsWith('http')) {
+    // Relative URL - assume ghanainsider.com
+    cleaned = `https://ghanainsider.com${cleaned.startsWith('/') ? '' : '/'}${cleaned}`;
+  }
+
+  return cleaned;
 }
 
 /**

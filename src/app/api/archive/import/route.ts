@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
         slug: extractedContent.slug,
         content: extractedContent.content,
         excerpt: extractedContent.excerpt,
+        featured_image: extractedContent.featured_image,
         category_id: category?.id || null,
         status: 'draft' as const,
         post_type: 'ai_assisted' as const,
