@@ -98,12 +98,19 @@ function extractSlugFromUrl(url: string): string {
   // Remove archive.org prefix if present
   let cleanUrl = url.replace(/https:\/\/web\.archive\.org\/web\/\d+\//, '');
 
-  // Extract everything after /de/ (including index.php/ if present)
-  const match = cleanUrl.match(/\/de\/(.+?)(?:\/|$)/);
+  // Find the /de/ part and extract everything after it
+  const deIndex = cleanUrl.indexOf('/de/');
 
-  if (match && match[1]) {
-    // Remove trailing slash and lowercase
-    return match[1].replace(/\/$/, '').toLowerCase().trim();
+  if (deIndex !== -1) {
+    // Get everything after /de/
+    let afterDe = cleanUrl.substring(deIndex + 4); // +4 to skip '/de/'
+
+    // Remove trailing slash and query params/hash
+    afterDe = afterDe.replace(/\/$/, '').split('?')[0].split('#')[0];
+
+    if (afterDe) {
+      return afterDe.toLowerCase().trim();
+    }
   }
 
   // Fallback: generate from URL path
