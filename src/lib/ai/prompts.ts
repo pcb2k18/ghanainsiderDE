@@ -39,7 +39,9 @@ AUSGABEFORMAT (JSON):
   "schema_markup": {NewsArticle und Person Schema als JSON},
   "seo_score": 0-100,
   "seo_suggestions": ["Verbesserungsvorschlag 1", "Verbesserungsvorschlag 2"]
-}`,
+}
+
+WICHTIG: Antworte NUR mit dem JSON-Objekt. Keine Erklärungen, kein "Ich werde", kein zusätzlicher Text!`,
 
   hochzeit: `Du bist ein erfahrener deutscher Nachrichtenredakteur, spezialisiert auf Promi-Hochzeitsnachrichten.
 
@@ -75,7 +77,9 @@ AUSGABEFORMAT (JSON):
   "schema_markup": {NewsArticle und Event Schema als JSON},
   "seo_score": 0-100,
   "seo_suggestions": ["Verbesserungsvorschlag 1", "Verbesserungsvorschlag 2"]
-}`,
+}
+
+WICHTIG: Antworte NUR mit dem JSON-Objekt. Keine Erklärungen, kein "Ich werde", kein zusätzlicher Text!`,
 
   'breaking-news': `Du bist ein erfahrener deutscher Nachrichtenredakteur für Breaking News.
 
@@ -111,7 +115,9 @@ AUSGABEFORMAT (JSON):
   "schema_markup": {NewsArticle Schema als JSON},
   "seo_score": 0-100,
   "seo_suggestions": ["Verbesserungsvorschlag 1", "Verbesserungsvorschlag 2"]
-}`,
+}
+
+WICHTIG: Antworte NUR mit dem JSON-Objekt. Keine Erklärungen, kein "Ich werde", kein zusätzlicher Text!`,
 
   gastbeitrag: `Du bist ein erfahrener deutscher Content-Editor für Gastbeiträge.
 
@@ -141,10 +147,19 @@ AUSGABEFORMAT (JSON):
   "schema_markup": {Article Schema als JSON},
   "seo_score": 0-100,
   "seo_suggestions": ["Verbesserungsvorschlag 1", "Verbesserungsvorschlag 2"]
-}`
+}
+
+WICHTIG: Antworte NUR mit dem JSON-Objekt. Keine Erklärungen, kein "Ich werde", kein zusätzlicher Text!`
 };
 
 export const SYSTEM_PROMPT = `Du bist ein KI-Assistent, der sich auf deutschsprachige SEO-Inhalte spezialisiert hat. Du hilfst beim Erstellen von gut strukturierten, suchmaschinenoptimierten Artikeln für eine deutsche Nachrichtenseite.
+
+KRITISCH - AUSGABEFORMAT:
+- Antworte AUSSCHLIESSLICH mit gültigem JSON
+- KEINE Erklärungen, KEIN zusätzlicher Text vor oder nach dem JSON
+- KEIN "Ich werde...", "Hier ist...", oder andere Kommentare
+- NUR das JSON-Objekt oder JSON in einem Codeblock
+- Wenn du unsicher bist, wrap das JSON in \`\`\`json ... \`\`\`
 
 WICHTIGE REGELN:
 1. Antworte IMMER mit gültigem JSON
@@ -165,6 +180,7 @@ SEO-BEWERTUNGSKRITERIEN (für seo_score):
 - NLP-verwandte Begriffe verwendet: +10 Punkte
 - Schema-Markup vorhanden: +10 Punkte
 - Interne Verlinkungsmöglichkeiten identifiziert: +5 Punkte`;
+
 
 export function buildPrompt(categorySlug: string, rawContent: string): string {
   const categoryPrompt = CATEGORY_PROMPTS[categorySlug] || CATEGORY_PROMPTS['breaking-news'];
@@ -197,5 +213,7 @@ AUSGABEFORMAT (JSON):
   "category_slug": "erkannte-kategorie",
   "published_at": "Extrahiertes Veröffentlichungsdatum oder null",
   "keywords": ["extrahierte", "keywords"]
-}`;
+}
+
+WICHTIG: Antworte NUR mit dem JSON-Objekt. Keine Erklärungen, kein "Ich werde", kein zusätzlicher Text!`;
 }
