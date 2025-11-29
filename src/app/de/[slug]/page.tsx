@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createServerClient } from '@/lib/supabase/client';
 import { Calendar, Clock, ArrowLeft } from 'lucide-react';
 import ShareButton from '@/components/ShareButton';
@@ -206,6 +207,19 @@ export default async function ArticlePage({ params }: PageProps) {
             />
           </div>
         </header>
+
+        {/* Featured Image */}
+        {post.featured_image && (
+          <div className="relative mb-12 aspect-video w-full overflow-hidden rounded-2xl">
+            <Image
+              src={post.featured_image}
+              alt={post.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        )}
 
         {/* Article Content */}
         <div

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { createServerClient } from '@/lib/supabase/client';
 import { Calendar, Clock, TrendingUp } from 'lucide-react';
 
@@ -63,6 +64,17 @@ export default async function HomePage() {
             href={`/de/${featuredPost.slug}`}
             className="group block overflow-hidden rounded-2xl border border-surface-800 bg-surface-900/50 transition-all hover:border-surface-700"
           >
+            {featuredPost.featured_image && (
+              <div className="relative aspect-[21/9] w-full overflow-hidden">
+                <Image
+                  src={featuredPost.featured_image}
+                  alt={featuredPost.title}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  priority
+                />
+              </div>
+            )}
             <div className="p-8 md:p-12">
               {featuredPost.categories && (
                 <span className="inline-block rounded-full bg-brand-500/10 px-3 py-1 text-sm font-medium text-brand-400">
@@ -105,20 +117,32 @@ export default async function HomePage() {
                 key={post.id}
                 className="group overflow-hidden rounded-xl border border-surface-800 bg-surface-900/50 transition-all hover:border-surface-700"
               >
-                <Link href={`/de/${post.slug}`} className="block p-6">
-                  {post.categories && (
-                    <span className="text-xs font-medium uppercase tracking-wider text-brand-400">
-                      {post.categories.name}
-                    </span>
+                <Link href={`/de/${post.slug}`} className="block">
+                  {post.featured_image && (
+                    <div className="relative aspect-video w-full overflow-hidden">
+                      <Image
+                        src={post.featured_image}
+                        alt={post.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
                   )}
-                  <h3 className="mt-3 font-display text-lg font-semibold text-surface-100 transition-colors group-hover:text-brand-400 line-clamp-2">
-                    {post.title}
-                  </h3>
-                  <p className="mt-3 text-sm text-surface-400 line-clamp-2">
-                    {post.excerpt}
-                  </p>
-                  <div className="mt-4 text-sm text-surface-500">
-                    {formatDate(post.published_at || post.created_at)}
+                  <div className="p-6">
+                    {post.categories && (
+                      <span className="text-xs font-medium uppercase tracking-wider text-brand-400">
+                        {post.categories.name}
+                      </span>
+                    )}
+                    <h3 className="mt-3 font-display text-lg font-semibold text-surface-100 transition-colors group-hover:text-brand-400 line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="mt-3 text-sm text-surface-400 line-clamp-2">
+                      {post.excerpt}
+                    </p>
+                    <div className="mt-4 text-sm text-surface-500">
+                      {formatDate(post.published_at || post.created_at)}
+                    </div>
                   </div>
                 </Link>
               </article>
