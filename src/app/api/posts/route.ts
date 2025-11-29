@@ -241,6 +241,21 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Delete related records first to avoid foreign key constraints
+
+    // 1. Delete SEO metadata
+    await supabase
+      .from('seo_metadata')
+      .delete()
+      .eq('post_id', id);
+
+    // 2. Update archive_imports to null out the post_id (keep import history)
+    await supabase
+      .from('archive_imports')
+      .update({ post_id: null })
+      .eq('post_id', id);
+
+    // 3. Now delete the post
     const { error } = await supabase
       .from('posts')
       .delete()
@@ -248,7 +263,7 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: 'Post deleted' });
+    return NextResponse.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
     console.error('DELETE error:', error);
     return NextResponse.json(
