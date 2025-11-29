@@ -122,6 +122,18 @@ export default function PostsPage() {
     post.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Select all functionality
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedPosts(filteredPosts.map((post) => post.id));
+    } else {
+      setSelectedPosts([]);
+    }
+  };
+
+  const isAllSelected = filteredPosts.length > 0 && selectedPosts.length === filteredPosts.length;
+  const isSomeSelected = selectedPosts.length > 0 && selectedPosts.length < filteredPosts.length;
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -176,6 +188,8 @@ export default function PostsPage() {
               <th className="px-6 py-4 text-left">
                 <input
                   type="checkbox"
+                  checked={isAllSelected}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
                   className="h-4 w-4 rounded border-surface-600 bg-surface-800"
                 />
               </th>
