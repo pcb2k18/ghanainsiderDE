@@ -18,6 +18,7 @@ interface ImportRecord {
   archive_url: string;
   original_url: string;
   import_status: 'pending' | 'processing' | 'completed' | 'failed';
+  post_id: string | null;
   error_message: string | null;
   created_at: string;
   posts?: {
@@ -247,9 +248,9 @@ export default function ArchiveImportPage() {
                 {getStatusIcon(record.import_status)}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    {record.posts ? (
+                    {record.posts && record.post_id ? (
                       <Link
-                        href={`/admin/posts/${record.id}`}
+                        href={`/admin/posts/${record.post_id}`}
                         className="font-medium text-surface-100 hover:text-brand-400"
                       >
                         {record.posts.title}
