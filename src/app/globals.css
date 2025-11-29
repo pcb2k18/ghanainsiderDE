@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-space-grotesk: 'Space Grotesk', system-ui, sans-serif;
+  --font-jetbrains: 'JetBrains Mono', monospace;
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-950 text-surface-100;
+    font-family: var(--font-inter);
+  }
+  
+  h1, h2, h3, h4 {
+    font-family: var(--font-space-grotesk);
+    @apply font-semibold tracking-tight;
+  }
+  
+  code, pre {
+    font-family: var(--font-jetbrains);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-950
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600 focus:ring-brand-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-surface-800 text-surface-100 hover:bg-surface-700 focus:ring-surface-500;
+  }
+  
+  .btn-ghost {
+    @apply btn bg-transparent text-surface-300 hover:text-surface-100 hover:bg-surface-800/50;
+  }
+  
+  .input {
+    @apply w-full px-4 py-3 bg-surface-900 border border-surface-700 rounded-lg
+           text-surface-100 placeholder-surface-500
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           transition-all duration-200;
+  }
+  
+  .textarea {
+    @apply input resize-none min-h-[150px];
+  }
+  
+  .select {
+    @apply input appearance-none cursor-pointer pr-12;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-size: 1.5rem;
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+  }
+  
+  .card {
+    @apply bg-surface-900/50 border border-surface-800 rounded-xl backdrop-blur-sm;
+  }
+  
+  .card-hover {
+    @apply card hover:border-surface-700 hover:bg-surface-900/70 transition-all duration-200 cursor-pointer;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+  }
+  
+  .badge-warning {
+    @apply badge bg-amber-500/10 text-amber-400 border border-amber-500/20;
+  }
+  
+  .badge-error {
+    @apply badge bg-red-500/10 text-red-400 border border-red-500/20;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-500/10 text-blue-400 border border-blue-500/20;
+  }
+  
+  .prose-content {
+    @apply text-surface-200 leading-relaxed;
+  }
+  
+  .prose-content h2 {
+    @apply text-xl font-semibold text-surface-100 mt-8 mb-4;
+  }
+  
+  .prose-content p {
+    @apply mb-4;
+  }
+  
+  .prose-content a {
+    @apply text-brand-400 hover:text-brand-300 underline;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-700 rounded-full hover:bg-surface-600;
+}
+
+/* Editor styles */
+.content-editor {
+  @apply font-mono text-sm leading-relaxed;
+}
+
+.content-editor:focus {
+  @apply outline-none;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply bg-surface-800 animate-pulse rounded;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-brand-600;
+}
