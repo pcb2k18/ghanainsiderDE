@@ -2,7 +2,8 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase/client';
-import { Calendar, Clock, ArrowLeft, Share2 } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft } from 'lucide-react';
+import ShareButton from '@/components/ShareButton';
 
 // Disable static generation
 export const dynamic = 'force-dynamic';
@@ -198,20 +199,10 @@ export default async function ArticlePage({ params }: PageProps) {
               <Clock className="h-4 w-4" />
               <span>{readingTime} Min. Lesezeit</span>
             </div>
-            <button
-              className="ml-auto flex items-center gap-2 rounded-lg bg-surface-800 px-4 py-2 text-sm text-surface-300 transition-colors hover:bg-surface-700"
-              onClick={() => {
-                if (typeof navigator !== 'undefined' && navigator.share) {
-                  navigator.share({
-                    title: post.title,
-                    url: window.location.href,
-                  });
-                }
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-              Teilen
-            </button>
+            <ShareButton
+              title={post.title}
+              url={`https://ghanainsider.com/de/${post.slug}`}
+            />
           </div>
         </header>
 
