@@ -11,7 +11,10 @@ import {
   AlertCircle,
   Loader2,
   ExternalLink,
+  User,
 } from 'lucide-react';
+import RichTextEditor from '@/components/RichTextEditor';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Post {
   id: string;
@@ -21,6 +24,7 @@ interface Post {
   excerpt: string;
   featured_image: string | null;
   category_id: string | null;
+  author_id: string | null;
   status: 'draft' | 'published' | 'archived';
   post_type: string;
   seo_score: number;
@@ -42,10 +46,18 @@ interface Category {
   slug: string;
 }
 
+interface Author {
+  id: string;
+  name: string;
+  email: string;
+  is_default: boolean;
+}
+
 export default function PostEditorPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,51 +68,57 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [authorId, setAuthorId] = useState('');
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [keywords, setKeywords] = useState('');
 
   useEffect(() => {
-    fetchPost();
-    fetchCategories();
+    fetchData();
   }, [params.id]);
 
-  const fetchPost = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch(`/api/posts?id=${params.id}`);
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        const p = data.data;
+      // Fetch post
+      const postResponse = await fetch(`/api/posts?id=${params.id}`);
+      const postData = await postResponse.json();
+
+      if (postData.success && postData.data) {
+        const p = postData.data;
         setPost(p);
         setTitle(p.title);
         setSlug(p.slug);
         setContent(p.content);
         setExcerpt(p.excerpt || '');
+        setFeaturedImage(p.featured_image || '');
         setCategoryId(p.category_id || '');
+        setAuthorId(p.author_id || '');
         setStatus(p.status);
         setMetaTitle(p.seo_metadata?.meta_title || '');
         setMetaDescription(p.seo_metadata?.meta_description || '');
         setKeywords(p.seo_metadata?.keywords?.join(', ') || '');
       }
+
+      // Fetch categories
+      const catResponse = await fetch('/api/categories');
+      const catData = await catResponse.json();
+      if (catData.success) {
+        setCategories(catData.data);
+      }
+
+      // Fetch authors
+      const authResponse = await fetch('/api/authors');
+      const authData = await authResponse.json();
+      if (authData.success && authData.data) {
+        setAuthors(authData.data);
+      }
     } catch (error) {
       setError('Error loading post');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
     }
   };
 
@@ -114,12 +132,14 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: resolvedParams.id,
+          id: params.id,
           title,
           slug,
           content,
           excerpt,
+          featured_image: featuredImage || null,
           category_id: categoryId || null,
+          author_id: authorId || null,
           status,
           seo_metadata: {
             meta_title: metaTitle,
@@ -132,7 +152,7 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Changes saved!');
+        setSuccess('Changes saved successfully!');
         setPost(data.data);
       } else {
         setError(data.error || 'Save failed');
@@ -145,26 +165,30 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this post?')) {
+    if (!confirm('Are you sure you want to delete this post? This cannot be undone.')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/posts?id=${resolvedParams.id}`, {
+      const response = await fetch(`/api/posts?id=${params.id}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (data.success) {
         router.push('/admin/posts');
+      } else {
+        setError(data.error || 'Delete failed');
       }
     } catch (error) {
-      setError('Delete failed');
+      setError('Network error. Please try again.');
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-brand-400" />
       </div>
     );
@@ -172,10 +196,10 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
 
   if (!post) {
     return (
-      <div className="flex flex-col items-center justify-center py-24">
+      <div className="flex flex-col items-center justify-center py-12">
         <AlertCircle className="mb-4 h-12 w-12 text-red-400" />
-        <p className="text-surface-400">Post not found</p>
-        <Link href="/admin/posts" className="btn-primary mt-4">
+        <h2 className="text-xl font-semibold text-surface-100">Post not found</h2>
+        <Link href="/admin/posts" className="btn-ghost mt-4">
           Back to Posts
         </Link>
       </div>
@@ -186,48 +210,34 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
     <div className="animate-fade-in">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div>
           <Link
             href="/admin/posts"
-            className="rounded-lg p-2 text-surface-400 transition-colors hover:bg-surface-800 hover:text-surface-100"
+            className="mb-4 inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
+            Back to Posts
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-surface-100">Edit Post</h1>
-            <p className="text-sm text-surface-500">ID: {post.id}</p>
-          </div>
+          <h1 className="text-3xl font-bold text-surface-100">Edit Post</h1>
+          <p className="mt-2 text-surface-400">
+            Last updated: {new Date(post.updated_at).toLocaleString()}
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          {post.status === 'published' && (
-            <a
-              href={`https://ghanainsider.com/de/${post.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-ghost flex items-center gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              View
-            </a>
-          )}
+          <Link
+            href={`/de/${post.slug}`}
+            target="_blank"
+            className="btn-ghost flex items-center gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View
+          </Link>
           <button
             onClick={handleDelete}
-            className="btn-ghost flex items-center gap-2 text-red-400 hover:text-red-300"
+            className="btn-ghost flex items-center gap-2 text-red-400 hover:bg-red-500/10"
           >
             <Trash2 className="h-4 w-4" />
             Delete
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="btn-primary flex items-center gap-2"
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Save
           </button>
         </div>
       </div>
@@ -247,189 +257,230 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
+      {/* Form */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Main Content */}
+        {/* Main Content - Left Column (2/3) */}
         <div className="col-span-2 space-y-6">
           {/* Title */}
           <div className="card p-6">
-            <label className="mb-2 block text-sm font-medium text-surface-300">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
               Title
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input text-lg font-semibold"
+              className="input text-lg"
             />
           </div>
 
-          {/* Slug */}
+          {/* URL Slug */}
           <div className="card p-6">
-            <label className="mb-2 block text-sm font-medium text-surface-300">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
               URL Slug
             </label>
-            <div className="flex items-center gap-2">
-              <span className="text-surface-500">/de/</span>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">
+                /de/
+              </span>
               <input
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="input flex-1 font-mono"
+                className="input pl-12 font-mono"
               />
             </div>
           </div>
 
-          {/* Content */}
+          {/* Rich Text Editor */}
           <div className="card p-6">
-            <label className="mb-2 block text-sm font-medium text-surface-300">
-              Content (HTML)
+            <label className="mb-3 block text-sm font-medium text-surface-300">
+              Content
             </label>
-            <textarea
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="textarea min-h-[500px] font-mono text-sm"
+              onChange={setContent}
+              placeholder="Edit your content..."
+              minHeight="500px"
             />
           </div>
 
           {/* Excerpt */}
           <div className="card p-6">
-            <label className="mb-2 block text-sm font-medium text-surface-300">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
               Excerpt
             </label>
             <textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
+              placeholder="Brief summary..."
               className="textarea"
               rows={3}
             />
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Settings - Right Column (1/3) */}
         <div className="space-y-6">
-          {/* Status & Category */}
+          {/* Actions */}
           <div className="card p-6">
-            <h3 className="mb-4 font-semibold text-surface-100">Publishing</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as typeof status)}
-                  className="select"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
+            <h3 className="mb-4 font-semibold text-surface-100">Actions</h3>
 
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">Category</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="select"
-                >
-                  <option value="">No Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+            <div className="mb-4">
+              <label className="mb-3 block text-sm font-medium text-surface-300">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="select"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary w-full"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="ml-2">Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span className="ml-2">Save Changes</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Featured Image */}
+          <div className="card p-6">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
+              Featured Image
+            </label>
+            <ImageUpload value={featuredImage} onChange={setFeaturedImage} />
+          </div>
+
+          {/* Category */}
+          <div className="card p-6">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
+              Category
+            </label>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="select"
+            >
+              <option value="">No category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Author */}
+          <div className="card p-6">
+            <label className="mb-3 block text-sm font-medium text-surface-300">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Author
               </div>
+            </label>
+            <select
+              value={authorId}
+              onChange={(e) => setAuthorId(e.target.value)}
+              className="select"
+            >
+              {authors.map((author) => (
+                <option key={author.id} value={author.id}>
+                  {author.name} {author.is_default && '(Default)'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* SEO Metadata */}
+          <div className="card p-6">
+            <h3 className="mb-4 font-semibold text-surface-100">SEO Metadata</h3>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm text-surface-400">
+                Meta Title
+              </label>
+              <input
+                type="text"
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                className="input"
+                maxLength={60}
+              />
+              <p className="mt-1 text-xs text-surface-500">
+                {metaTitle.length}/60 chars
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm text-surface-400">
+                Meta Description
+              </label>
+              <textarea
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                className="textarea"
+                rows={3}
+                maxLength={160}
+              />
+              <p className="mt-1 text-xs text-surface-500">
+                {metaDescription.length}/160 chars
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-surface-400">
+                Keywords (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="keyword1, keyword2, keyword3"
+                className="input"
+              />
             </div>
           </div>
 
-          {/* SEO */}
+          {/* Post Info */}
           <div className="card p-6">
-            <h3 className="mb-4 font-semibold text-surface-100">SEO</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">
-                  Meta Title ({metaTitle.length}/60)
-                </label>
-                <input
-                  type="text"
-                  value={metaTitle}
-                  onChange={(e) => setMetaTitle(e.target.value)}
-                  maxLength={60}
-                  className="input"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">
-                  Meta Description ({metaDescription.length}/160)
-                </label>
-                <textarea
-                  value={metaDescription}
-                  onChange={(e) => setMetaDescription(e.target.value)}
-                  maxLength={160}
-                  className="textarea"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">
-                  Keywords (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="keyword1, keyword2, keyword3"
-                  className="input"
-                />
-              </div>
-
-              <div className="rounded-lg bg-surface-800/50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-400">SEO Score:</span>
-                  <span className={`font-mono font-semibold ${
-                    post.seo_score >= 80
-                      ? 'text-emerald-400'
-                      : post.seo_score >= 60
-                      ? 'text-amber-400'
-                      : 'text-red-400'
-                  }`}>
-                    {post.seo_score}/100
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="card p-6">
-            <h3 className="mb-4 font-semibold text-surface-100">Information</h3>
-            
+            <h3 className="mb-4 font-semibold text-surface-100">Post Info</h3>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
+              <div>
                 <span className="text-surface-500">Type:</span>
-                <span className="text-surface-300">{post.post_type}</span>
+                <span className="ml-2 text-surface-200">{post.post_type}</span>
               </div>
-              <div className="flex justify-between">
+              <div>
+                <span className="text-surface-500">SEO Score:</span>
+                <span className="ml-2 text-surface-200">{post.seo_score}/100</span>
+              </div>
+              <div>
                 <span className="text-surface-500">Created:</span>
-                <span className="text-surface-300">
-                  {new Date(post.created_at).toLocaleDateString('en-US')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500">Updated:</span>
-                <span className="text-surface-300">
-                  {new Date(post.updated_at).toLocaleDateString('en-US')}
+                <span className="ml-2 text-surface-200">
+                  {new Date(post.created_at).toLocaleDateString()}
                 </span>
               </div>
               {post.published_at && (
-                <div className="flex justify-between">
+                <div>
                   <span className="text-surface-500">Published:</span>
-                  <span className="text-surface-300">
-                    {new Date(post.published_at).toLocaleDateString('en-US')}
+                  <span className="ml-2 text-surface-200">
+                    {new Date(post.published_at).toLocaleDateString()}
                   </span>
                 </div>
               )}
