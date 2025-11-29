@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildPrompt, SYSTEM_PROMPT, buildArchiveImportPrompt } from './prompts';
 import { AIFormattedContent } from '../supabase/types';
-import { createClient } from '../supabase/server';
+import { createServerClient } from '../supabase/client';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -11,7 +11,7 @@ const anthropic = new Anthropic({
 async function getClaudeModel(): Promise<string> {
   try {
     // Try to get from database settings
-    const supabase = await createClient();
+    const supabase = createServerClient();
     const { data, error } = await supabase
       .from('settings')
       .select('value')

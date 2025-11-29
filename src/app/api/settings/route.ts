@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/client';
 import { NextResponse } from 'next/server';
 
 // GET - Fetch all settings or a specific setting
@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
 
-    const supabase = await createClient();
+    const supabase = createServerClient();
 
     if (key) {
       // Fetch specific setting
@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createServerClient();
 
     const { data, error } = await supabase
       .from('settings')
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createServerClient();
 
     const { data, error } = await supabase
       .from('settings')
