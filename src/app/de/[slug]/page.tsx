@@ -7,6 +7,7 @@ import ShareButton from '@/components/ShareButton';
 
 // Disable static generation
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Never cache
 
 interface PageProps {
   params: Promise<{ slug: string }>;

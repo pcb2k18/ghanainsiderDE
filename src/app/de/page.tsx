@@ -4,6 +4,7 @@ import { Calendar, Clock, TrendingUp } from 'lucide-react';
 
 // Disable static generation - require runtime
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Never cache
 
 async function getPosts() {
   try {
