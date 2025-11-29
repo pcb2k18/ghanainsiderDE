@@ -38,10 +38,17 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
     // Get the cleaned HTML
     let content = articleElement.html() || '';
 
-    // Clean up archive.org URLs in links
+    // Clean up ALL archive.org URLs from links (not just ghanainsider.com)
+    // Pattern: https://web.archive.org/web/TIMESTAMP/https://example.com/...
     content = content.replace(
-      /https:\/\/web\.archive\.org\/web\/\d+\/(https:\/\/ghanainsider\.com\/de\/index\.php\/[^"']+)/g,
+      /https:\/\/web\.archive\.org\/web\/\d+\/(https?:\/\/[^"'\s]+)/g,
       '$1'
+    );
+
+    // Also handle archive URLs in other attributes (src, href, etc)
+    content = content.replace(
+      /web\.archive\.org\/web\/\d+\//g,
+      ''
     );
 
     // Remove empty paragraphs and extra whitespace
@@ -61,8 +68,9 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
     // 5. Determine category from URL or content
     const category_slug = detectCategory(originalUrl, textContent);
 
-    // 6. Extract published date if available
-    const published_at = extractPublishedDate($);
+    // 6. Use null for published_at - let the system use current date
+    // We're treating archive imports as NEW articles, not historical ones
+    const published_at = null;
 
     return {
       title,
@@ -133,32 +141,4 @@ function detectCategory(url: string, content: string): string {
 
   // Default to breaking-news
   return 'breaking-news';
-}
-
-/**
- * Extract published date from HTML
- */
-function extractPublishedDate($: cheerio.CheerioAPI): string | null {
-  // Try multiple selectors for date
-  const dateSelectors = [
-    'time[datetime]',
-    'meta[property="article:published_time"]',
-    '.published',
-    '.entry-date',
-  ];
-
-  for (const selector of dateSelectors) {
-    const element = $(selector).first();
-    if (element.length > 0) {
-      const datetime = element.attr('datetime') || element.attr('content') || element.text();
-      if (datetime) {
-        const date = new Date(datetime);
-        if (!isNaN(date.getTime())) {
-          return date.toISOString();
-        }
-      }
-    }
-  }
-
-  return null;
 }
