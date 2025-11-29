@@ -12,7 +12,6 @@ import {
   Loader2,
   ExternalLink,
 } from 'lucide-react';
-import { use } from 'react';
 
 interface Post {
   id: string;
@@ -43,8 +42,7 @@ interface Category {
   slug: string;
 }
 
-export default function PostEditorPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
+export default function PostEditorPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -67,11 +65,11 @@ export default function PostEditorPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     fetchPost();
     fetchCategories();
-  }, [resolvedParams.id]);
+  }, [params.id]);
 
   const fetchPost = async () => {
     try {
-      const response = await fetch(`/api/posts?id=${resolvedParams.id}`);
+      const response = await fetch(`/api/posts?id=${params.id}`);
       const data = await response.json();
       
       if (data.success && data.data) {
