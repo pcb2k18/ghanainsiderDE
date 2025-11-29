@@ -1,10 +1,34 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildPrompt, SYSTEM_PROMPT, buildArchiveImportPrompt } from './prompts';
 import { AIFormattedContent } from '../supabase/types';
+import { createClient } from '../supabase/server';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Get the Claude model to use (priority: database > env > default)
+async function getClaudeModel(): Promise<string> {
+  try {
+    // Try to get from database settings
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'ai_model')
+      .single();
+
+    if (!error && data?.value) {
+      return data.value;
+    }
+  } catch (error) {
+    // If database fetch fails, fall through to env/default
+    console.warn('Could not fetch AI model from database:', error);
+  }
+
+  // Fall back to environment variable or default
+  return process.env.CLAUDE_MODEL || 'claude-3-5-haiku-20241022';
+}
 
 export interface FormatContentParams {
   rawContent: string;
@@ -27,12 +51,13 @@ export async function formatContentWithAI(
   params: FormatContentParams
 ): Promise<AIFormattedContent> {
   const { rawContent, categorySlug } = params;
-  
+
   const userPrompt = buildPrompt(categorySlug, rawContent);
-  
+  const model = await getClaudeModel();
+
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 4096,
       messages: [
         {
@@ -84,10 +109,11 @@ export async function importFromArchive(
   originalUrl: string
 ): Promise<ArchiveImportResult> {
   const userPrompt = buildArchiveImportPrompt(htmlContent, originalUrl);
-  
+  const model = await getClaudeModel();
+
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 4096,
       messages: [
         {
@@ -120,9 +146,11 @@ export async function improveContent(
   existingContent: string,
   instructions: string
 ): Promise<string> {
+  const model = await getClaudeModel();
+
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 4096,
       messages: [
         {
