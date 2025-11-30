@@ -191,11 +191,11 @@ export default function PostsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/admin/archive" className="btn-secondary flex items-center gap-2">
+          <Link href="/de/admin/archive" className="btn-secondary flex items-center gap-2">
             <Archive className="h-4 w-4" />
             Archive Import
           </Link>
-          <Link href="/admin/create" className="btn-primary flex items-center gap-2">
+          <Link href="/de/admin/create" className="btn-primary flex items-center gap-2">
             <Plus className="h-4 w-4" />
             New Post
           </Link>
@@ -320,7 +320,7 @@ export default function PostsPage() {
                 <td colSpan={7} className="px-6 py-16 text-center">
                   <p className="text-surface-500">No posts found</p>
                   <Link
-                    href="/admin/create"
+                    href="/de/admin/create"
                     className="btn-primary mt-4 inline-flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" />

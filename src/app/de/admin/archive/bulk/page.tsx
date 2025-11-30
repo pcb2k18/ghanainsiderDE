@@ -123,7 +123,7 @@ export default function BulkArchiveImportPage() {
     <div className="p-8">
       <div className="mb-8">
         <Link
-          href="/admin/archive"
+          href="/de/admin/archive"
           className="inline-flex items-center gap-2 text-surface-400 hover:text-surface-100 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />

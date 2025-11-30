@@ -177,7 +177,7 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
       const data = await response.json();
 
       if (data.success) {
-        router.push('/admin/posts');
+        router.push('/de/admin/posts');
       } else {
         setError(data.error || 'Delete failed');
       }
@@ -199,7 +199,7 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
       <div className="flex flex-col items-center justify-center py-12">
         <AlertCircle className="mb-4 h-12 w-12 text-red-400" />
         <h2 className="text-xl font-semibold text-surface-100">Post not found</h2>
-        <Link href="/admin/posts" className="btn-ghost mt-4">
+        <Link href="/de/admin/posts" className="btn-ghost mt-4">
           Back to Posts
         </Link>
       </div>
@@ -212,7 +212,7 @@ export default function PostEditorPage({ params }: { params: { id: string } }) {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Link
-            href="/admin/posts"
+            href="/de/admin/posts"
             className="mb-4 inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100"
           >
             <ArrowLeft className="h-4 w-4" />

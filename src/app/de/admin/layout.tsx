@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-surface-800 bg-surface-900/50 backdrop-blur-xl">
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-surface-800 px-6">
-          <Link href="/admin" className="flex items-center gap-3">
+          <Link href="/de/admin" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500">
               <span className="text-lg font-bold text-white">G</span>
             </div>

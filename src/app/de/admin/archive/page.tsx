@@ -142,7 +142,7 @@ export default function ArchiveImportPage() {
             Recover your old posts from Archive.org Wayback Machine
           </p>
         </div>
-        <Link href="/admin/archive/bulk" className="btn-secondary flex items-center gap-2">
+        <Link href="/de/admin/archive/bulk" className="btn-secondary flex items-center gap-2">
           <Upload className="h-4 w-4" />
           Bulk Import
         </Link>

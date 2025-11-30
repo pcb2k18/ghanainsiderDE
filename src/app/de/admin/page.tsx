@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="mb-8 grid grid-cols-2 gap-4">
         <Link
-          href="/admin/create"
+          href="/de/admin/create"
           className="card-hover flex items-center gap-4 p-6"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10">
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
         </Link>
         
         <Link
-          href="/admin/posts/new"
+          href="/de/admin/posts/new"
           className="card-hover flex items-center gap-4 p-6"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
             Recent Posts
           </h2>
           <Link
-            href="/admin/posts"
+            href="/de/admin/posts"
             className="text-sm text-brand-400 hover:text-brand-300"
           >
             View all →
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
               <AlertCircle className="mb-4 h-12 w-12 text-surface-600" />
               <p className="text-surface-400">No posts yet</p>
               <Link
-                href="/admin/create"
+                href="/de/admin/create"
                 className="btn-primary mt-4"
               >
                 Create First Post

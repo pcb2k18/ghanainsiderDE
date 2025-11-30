@@ -191,7 +191,7 @@ export default function NewPostPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Link
-            href="/admin"
+            href="/de/admin"
             className="mb-4 inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100"
           >
             <ArrowLeft className="h-4 w-4" />
