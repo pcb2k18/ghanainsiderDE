@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Clock,
   Archive,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface Post {
@@ -32,10 +34,13 @@ export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const postsPerPage = 20;
 
   useEffect(() => {
     fetchPosts();
-  }, [statusFilter]);
+  }, [statusFilter, currentPage]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -44,12 +49,15 @@ export default function PostsPage() {
       if (statusFilter !== 'all') {
         params.set('status', statusFilter);
       }
-      
+      params.set('limit', postsPerPage.toString());
+      params.set('offset', ((currentPage - 1) * postsPerPage).toString());
+
       const response = await fetch(`/api/posts?${params}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setPosts(data.data || []);
+        setTotalCount(data.pagination?.total || 0);
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
@@ -163,6 +171,15 @@ export default function PostsPage() {
   const isAllSelected = filteredPosts.length > 0 && selectedPosts.length === filteredPosts.length;
   const isSomeSelected = selectedPosts.length > 0 && selectedPosts.length < filteredPosts.length;
 
+  const totalPages = Math.ceil(totalCount / postsPerPage);
+  const startIndex = (currentPage - 1) * postsPerPage + 1;
+  const endIndex = Math.min(currentPage * postsPerPage, totalCount);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedPosts([]); // Clear selection when changing pages
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -199,7 +216,10 @@ export default function PostsPage() {
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1); // Reset to first page when filter changes
+          }}
           className="select w-48"
         >
           <option value="all">All Status</option>
@@ -394,6 +414,63 @@ export default function PostsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalCount > postsPerPage && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-surface-400">
+            Showing <span className="font-medium text-surface-200">{startIndex}</span> to{' '}
+            <span className="font-medium text-surface-200">{endIndex}</span> of{' '}
+            <span className="font-medium text-surface-200">{totalCount}</span> posts
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  // Show first page, last page, current page, and pages around current
+                  return (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  );
+                })
+                .map((page, index, array) => (
+                  <div key={page} className="flex items-center">
+                    {index > 0 && array[index - 1] !== page - 1 && (
+                      <span className="px-2 text-surface-500">...</span>
+                    )}
+                    <button
+                      onClick={() => handlePageChange(page)}
+                      className={`h-10 w-10 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-brand-500 text-white'
+                          : 'text-surface-300 hover:bg-surface-800'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </div>
+                ))}
+            </div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
