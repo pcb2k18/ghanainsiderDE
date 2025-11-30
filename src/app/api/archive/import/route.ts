@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         excerpt: extractedContent.excerpt,
         featured_image: extractedContent.featured_image,
         category_id: category?.id || null,
-        status: 'publish' as const,
+        status: 'published' as const,
         post_type: 'ai_assisted' as const,
         original_source: archiveUrl,
         published_at: extractedContent.published_at,
