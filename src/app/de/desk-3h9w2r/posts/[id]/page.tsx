@@ -6,15 +6,39 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   Save,
+  Trash2,
   CheckCircle,
   AlertCircle,
   Loader2,
-  FileText,
+  ExternalLink,
   User,
 } from 'lucide-react';
-import slugify from 'slugify';
 import RichTextEditor from '@/components/RichTextEditor';
 import ImageUpload from '@/components/ImageUpload';
+
+interface Post {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  featured_image: string | null;
+  category_id: string | null;
+  author_id: string | null;
+  status: 'draft' | 'published' | 'archived';
+  post_type: string;
+  seo_score: number;
+  author_name: string | null;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  categories: { name: string; slug: string } | null;
+  seo_metadata: {
+    meta_title: string;
+    meta_description: string;
+    keywords: string[];
+  } | null;
+}
 
 interface Category {
   id: string;
@@ -29,8 +53,9 @@ interface Author {
   is_default: boolean;
 }
 
-export default function NewPostPage() {
+export default function PostEditorPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [post, setPost] = useState<Post | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,28 +71,42 @@ export default function NewPostPage() {
   const [featuredImage, setFeaturedImage] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [authorId, setAuthorId] = useState('');
-  const [status, setStatus] = useState<'draft' | 'published'>('draft');
-  const [postType, setPostType] = useState<'guest_post' | 'manual'>('guest_post');
-  const [guestAuthorName, setGuestAuthorName] = useState('');
-  const [guestAuthorEmail, setGuestAuthorEmail] = useState('');
+  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [keywords, setKeywords] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [params.id]);
 
   const fetchData = async () => {
     try {
+      // Fetch post
+      const postResponse = await fetch(`/api/posts?id=${params.id}`);
+      const postData = await postResponse.json();
+
+      if (postData.success && postData.data) {
+        const p = postData.data;
+        setPost(p);
+        setTitle(p.title);
+        setSlug(p.slug);
+        setContent(p.content);
+        setExcerpt(p.excerpt || '');
+        setFeaturedImage(p.featured_image || '');
+        setCategoryId(p.category_id || '');
+        setAuthorId(p.author_id || '');
+        setStatus(p.status);
+        setMetaTitle(p.seo_metadata?.meta_title || '');
+        setMetaDescription(p.seo_metadata?.meta_description || '');
+        setKeywords(p.seo_metadata?.keywords?.join(', ') || '');
+      }
+
       // Fetch categories
       const catResponse = await fetch('/api/categories');
       const catData = await catResponse.json();
-      if (catData.success && catData.data) {
+      if (catData.success) {
         setCategories(catData.data);
-        if (catData.data.length > 0) {
-          setCategoryId(catData.data[0].id);
-        }
       }
 
       // Fetch authors
@@ -75,67 +114,25 @@ export default function NewPostPage() {
       const authData = await authResponse.json();
       if (authData.success && authData.data) {
         setAuthors(authData.data);
-        const defaultAuthor = authData.data.find((a: Author) => a.is_default);
-        if (defaultAuthor) {
-          setAuthorId(defaultAuthor.id);
-        }
       }
     } catch (error) {
-      setError('Failed to load data');
+      setError('Error loading post');
     } finally {
       setLoading(false);
     }
   };
 
-  const generateSlug = (text: string) => {
-    const slug = slugify(text, {
-      lower: true,
-      strict: true,
-      remove: /[*+~.()'"!:@]/g,
-    })
-      .replace(/[äÄ]/g, 'ae')
-      .replace(/[öÖ]/g, 'oe')
-      .replace(/[üÜ]/g, 'ue')
-      .replace(/ß/g, 'ss');
-
-    setSlug(slug);
-  };
-
-  const handleTitleChange = (value: string) => {
-    setTitle(value);
-    if (!slug) {
-      generateSlug(value);
-    }
-  };
-
-  const handleSave = async (saveStatus: 'draft' | 'published') => {
-    // Validation
-    if (!title.trim()) {
-      setError('Title is required');
-      return;
-    }
-    if (!slug.trim()) {
-      setError('URL slug is required');
-      return;
-    }
-    if (!content.trim()) {
-      setError('Content is required');
-      return;
-    }
-
+  const handleSave = async () => {
     setSaving(true);
     setError(null);
+    setSuccess(null);
 
     try {
-      const keywordsArray = keywords
-        .split(',')
-        .map((k) => k.trim())
-        .filter((k) => k.length > 0);
-
       const response = await fetch('/api/posts', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: params.id,
           title,
           slug,
           content,
@@ -143,15 +140,11 @@ export default function NewPostPage() {
           featured_image: featuredImage || null,
           category_id: categoryId || null,
           author_id: authorId || null,
-          status: saveStatus,
-          post_type: postType,
-          author_name: guestAuthorName || null,
-          author_email: guestAuthorEmail || null,
-          seo_score: 0,
+          status,
           seo_metadata: {
-            meta_title: metaTitle || title,
-            meta_description: metaDescription || excerpt,
-            keywords: keywordsArray,
+            meta_title: metaTitle,
+            meta_description: metaDescription,
+            keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
           },
         }),
       });
@@ -159,14 +152,8 @@ export default function NewPostPage() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(
-          saveStatus === 'published'
-            ? 'Post published successfully!'
-            : 'Draft saved successfully!'
-        );
-        setTimeout(() => {
-          router.push(`/admin/posts/${data.data.id}`);
-        }, 1500);
+        setSuccess('Changes saved successfully!');
+        setPost(data.data);
       } else {
         setError(data.error || 'Save failed');
       }
@@ -174,6 +161,28 @@ export default function NewPostPage() {
       setError('Network error. Please try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this post? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/posts?id=${params.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push('/de/desk-3h9w2r/posts');
+      } else {
+        setError(data.error || 'Delete failed');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
     }
   };
 
@@ -185,25 +194,51 @@ export default function NewPostPage() {
     );
   }
 
+  if (!post) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertCircle className="mb-4 h-12 w-12 text-red-400" />
+        <h2 className="text-xl font-semibold text-surface-100">Post not found</h2>
+        <Link href="/de/desk-3h9w2r/posts" className="btn-ghost mt-4">
+          Back to Posts
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Link
-            href="/de/admin"
+            href="/de/desk-3h9w2r/posts"
             className="mb-4 inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-100"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to Posts
           </Link>
-          <h1 className="flex items-center gap-3 text-3xl font-bold text-surface-100">
-            <FileText className="h-8 w-8 text-brand-400" />
-            Create New Post
-          </h1>
+          <h1 className="text-3xl font-bold text-surface-100">Edit Post</h1>
           <p className="mt-2 text-surface-400">
-            Create a new post with rich text editing
+            Last updated: {new Date(post.updated_at).toLocaleString()}
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/de/${post.slug}`}
+            target="_blank"
+            className="btn-ghost flex items-center gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View
+          </Link>
+          <button
+            onClick={handleDelete}
+            className="btn-ghost flex items-center gap-2 text-red-400 hover:bg-red-500/10"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </button>
         </div>
       </div>
 
@@ -229,13 +264,12 @@ export default function NewPostPage() {
           {/* Title */}
           <div className="card p-6">
             <label className="mb-3 block text-sm font-medium text-surface-300">
-              Title *
+              Title
             </label>
             <input
               type="text"
               value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Enter post title..."
+              onChange={(e) => setTitle(e.target.value)}
               className="input text-lg"
             />
           </div>
@@ -243,7 +277,7 @@ export default function NewPostPage() {
           {/* URL Slug */}
           <div className="card p-6">
             <label className="mb-3 block text-sm font-medium text-surface-300">
-              URL Slug *
+              URL Slug
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">
@@ -253,27 +287,20 @@ export default function NewPostPage() {
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                placeholder="url-friendly-slug"
                 className="input pl-12 font-mono"
               />
             </div>
-            <button
-              onClick={() => generateSlug(title)}
-              className="btn-ghost mt-2 text-sm"
-            >
-              Generate from title
-            </button>
           </div>
 
           {/* Rich Text Editor */}
           <div className="card p-6">
             <label className="mb-3 block text-sm font-medium text-surface-300">
-              Content *
+              Content
             </label>
             <RichTextEditor
               value={content}
               onChange={setContent}
-              placeholder="Start writing your content..."
+              placeholder="Edit your content..."
               minHeight="500px"
             />
           </div>
@@ -286,7 +313,7 @@ export default function NewPostPage() {
             <textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Brief summary of the article (2-3 sentences)..."
+              placeholder="Brief summary..."
               className="textarea"
               rows={3}
             />
@@ -295,9 +322,9 @@ export default function NewPostPage() {
 
         {/* Settings - Right Column (1/3) */}
         <div className="space-y-6">
-          {/* Publish Settings */}
+          {/* Actions */}
           <div className="card p-6">
-            <h3 className="mb-4 font-semibold text-surface-100">Publish</h3>
+            <h3 className="mb-4 font-semibold text-surface-100">Actions</h3>
 
             <div className="mb-4">
               <label className="mb-3 block text-sm font-medium text-surface-300">
@@ -305,52 +332,32 @@ export default function NewPostPage() {
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
+                onChange={(e) => setStatus(e.target.value as any)}
                 className="select"
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="mb-3 block text-sm font-medium text-surface-300">
-                Post Type
-              </label>
-              <select
-                value={postType}
-                onChange={(e) => setPostType(e.target.value as 'guest_post' | 'manual')}
-                className="select"
-              >
-                <option value="guest_post">Guest Post</option>
-                <option value="manual">Manual</option>
-              </select>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleSave('draft')}
-                disabled={saving}
-                className="btn-secondary flex-1"
-              >
-                {saving ? (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary w-full"
+            >
+              {saving ? (
+                <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+                  <span className="ml-2">Saving...</span>
+                </>
+              ) : (
+                <>
                   <Save className="h-4 w-4" />
-                )}
-              </button>
-              <button
-                onClick={() => handleSave('published')}
-                disabled={saving}
-                className="btn-primary flex-1"
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-              </button>
-            </div>
+                  <span className="ml-2">Save Changes</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Featured Image */}
@@ -371,15 +378,12 @@ export default function NewPostPage() {
               onChange={(e) => setCategoryId(e.target.value)}
               className="select"
             >
-              {categories.length === 0 ? (
-                <option>No categories available</option>
-              ) : (
-                categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))
-              )}
+              <option value="">No category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -404,41 +408,6 @@ export default function NewPostPage() {
             </select>
           </div>
 
-          {/* Guest Author Info (for guest posts) */}
-          {postType === 'guest_post' && (
-            <div className="card p-6">
-              <h3 className="mb-4 font-semibold text-surface-100">
-                Guest Author Info
-              </h3>
-
-              <div className="mb-4">
-                <label className="mb-2 block text-sm text-surface-400">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={guestAuthorName}
-                  onChange={(e) => setGuestAuthorName(e.target.value)}
-                  placeholder="John Doe"
-                  className="input"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-surface-400">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={guestAuthorEmail}
-                  onChange={(e) => setGuestAuthorEmail(e.target.value)}
-                  placeholder="john@example.com"
-                  className="input"
-                />
-              </div>
-            </div>
-          )}
-
           {/* SEO Metadata */}
           <div className="card p-6">
             <h3 className="mb-4 font-semibold text-surface-100">SEO Metadata</h3>
@@ -451,7 +420,6 @@ export default function NewPostPage() {
                 type="text"
                 value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
-                placeholder="Auto-generated from title"
                 className="input"
                 maxLength={60}
               />
@@ -467,7 +435,6 @@ export default function NewPostPage() {
               <textarea
                 value={metaDescription}
                 onChange={(e) => setMetaDescription(e.target.value)}
-                placeholder="Auto-generated from excerpt"
                 className="textarea"
                 rows={3}
                 maxLength={160}
@@ -488,6 +455,35 @@ export default function NewPostPage() {
                 placeholder="keyword1, keyword2, keyword3"
                 className="input"
               />
+            </div>
+          </div>
+
+          {/* Post Info */}
+          <div className="card p-6">
+            <h3 className="mb-4 font-semibold text-surface-100">Post Info</h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-surface-500">Type:</span>
+                <span className="ml-2 text-surface-200">{post.post_type}</span>
+              </div>
+              <div>
+                <span className="text-surface-500">SEO Score:</span>
+                <span className="ml-2 text-surface-200">{post.seo_score}/100</span>
+              </div>
+              <div>
+                <span className="text-surface-500">Created:</span>
+                <span className="ml-2 text-surface-200">
+                  {new Date(post.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              {post.published_at && (
+                <div>
+                  <span className="text-surface-500">Published:</span>
+                  <span className="ml-2 text-surface-200">
+                    {new Date(post.published_at).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

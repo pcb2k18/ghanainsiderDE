@@ -8,19 +8,21 @@ import {
   Users,
   Settings,
   ExternalLink,
+  LogOut,
 } from 'lucide-react';
+import { UserButton } from '@clerk/nextjs';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/posts', icon: FileText, label: 'Posts' },
-  { href: '/admin/create', icon: Sparkles, label: 'AI Create' },
-  { href: '/admin/archive', icon: Archive, label: 'Archive Import' },
-  { href: '/admin/agencies', icon: Users, label: 'Agencies' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
+  { href: '/de/desk-3h9w2r', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/de/desk-3h9w2r/posts', icon: FileText, label: 'Posts' },
+  { href: '/de/desk-3h9w2r/create', icon: Sparkles, label: 'AI Create' },
+  { href: '/de/desk-3h9w2r/archive', icon: Archive, label: 'Archive Import' },
+  { href: '/de/desk-3h9w2r/agencies', icon: Users, label: 'Agencies' },
+  { href: '/de/desk-3h9w2r/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -28,9 +30,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-screen bg-surface-950">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-surface-800 bg-surface-900/50 backdrop-blur-xl">
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b border-surface-800 px-6">
-          <Link href="/de/admin" className="flex items-center gap-3">
+        {/* Logo & User */}
+        <div className="flex h-16 items-center justify-between border-b border-surface-800 px-6">
+          <Link href="/de/desk-3h9w2r" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500">
               <span className="text-lg font-bold text-white">G</span>
             </div>
@@ -41,6 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span className="block text-xs text-surface-500">DE Admin</span>
             </div>
           </Link>
+          <UserButton afterSignOutUrl="/de" />
         </div>
 
         {/* Navigation */}
