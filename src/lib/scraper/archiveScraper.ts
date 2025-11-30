@@ -24,8 +24,8 @@ export function scrapeArchiveHTML(html: string, originalUrl: string): ScrapedArc
     title = h1Element.first().text().trim();
   }
 
-  // 2. Extract featured image
-  const featured_image = extractFeaturedImage($);
+  // 2. Skip featured image extraction for archive imports
+  const featured_image = null;
 
   // 3. Extract article content
   const articleElement = $('article .entry-content');
