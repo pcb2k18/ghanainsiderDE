@@ -37,31 +37,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...getStaticPages(),
 
       // Dynamic post pages
-      ...(posts || []).flatMap((post) => {
+      ...(posts || []).map((post) => {
         const lastModified = post.updated_at || post.published_at;
         const date = lastModified ? new Date(lastModified) : new Date();
 
-        // Create entries for both URL formats
-        const entries: MetadataRoute.Sitemap = [
-          {
-            url: `${SITE_URL}/de/${post.slug}`,
-            lastModified: date,
-            changeFrequency: 'weekly',
-            priority: 0.8,
-          },
-        ];
-
-        // If the slug contains 'index.php/', also add the legacy format
-        if (post.slug.includes('index.php/')) {
-          entries.push({
-            url: `${SITE_URL}/de/${post.slug}`,
-            lastModified: date,
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        }
-
-        return entries;
+        return {
+          url: `${SITE_URL}/de/${post.slug}`,
+          lastModified: date,
+          changeFrequency: 'weekly' as const,
+          priority: 0.8,
+        };
       }),
     ];
 
