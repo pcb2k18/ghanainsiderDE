@@ -173,6 +173,11 @@ export async function POST(request: NextRequest) {
     revalidatePath('/de');
     revalidatePath('/de', 'page');
 
+    // Revalidate sitemap when a new post is published
+    if (status === 'published') {
+      revalidatePath('/sitemap.xml');
+    }
+
     return NextResponse.json({ success: true, data: post }, { status: 201 });
   } catch (error) {
     console.error('POST create error:', error);
@@ -242,6 +247,11 @@ export async function PUT(request: NextRequest) {
       revalidatePath(`/de/${post.slug}`);
     }
 
+    // Revalidate sitemap when post is published or updated
+    if (updateData.status === 'published' || post?.status === 'published') {
+      revalidatePath('/sitemap.xml');
+    }
+
     return NextResponse.json({ success: true, data: post });
   } catch (error) {
     console.error('PUT update error:', error);
@@ -305,6 +315,9 @@ export async function DELETE(request: NextRequest) {
       revalidatePath(`/de/${post.slug}`);
       revalidatePath(`/de/index.php/${post.slug.replace('index.php/', '')}`);
     }
+
+    // Revalidate sitemap to remove deleted post
+    revalidatePath('/sitemap.xml');
 
     return NextResponse.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
