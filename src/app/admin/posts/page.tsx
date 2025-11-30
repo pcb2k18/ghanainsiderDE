@@ -67,12 +67,41 @@ export default function PostsPage() {
       const response = await fetch(`/api/posts?id=${id}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         setPosts(posts.filter((p) => p.id !== id));
+        setSelectedPosts(selectedPosts.filter((selectedId) => selectedId !== id));
       }
     } catch (error) {
       console.error('Failed to delete post:', error);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPosts.length === 0) return;
+
+    const confirmMessage = `Are you sure you want to delete ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}? This action cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      // Delete all selected posts
+      const deletePromises = selectedPosts.map((id) =>
+        fetch(`/api/posts?id=${id}`, { method: 'DELETE' })
+      );
+
+      await Promise.all(deletePromises);
+
+      // Update UI
+      setPosts(posts.filter((p) => !selectedPosts.includes(p.id)));
+      setSelectedPosts([]);
+
+      alert(`Successfully deleted ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Failed to delete posts:', error);
+      alert('Failed to delete some posts. Please try again.');
     }
   };
 
@@ -179,6 +208,32 @@ export default function PostsPage() {
           <option value="archived">Archived</option>
         </select>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedPosts.length > 0 && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-brand-500/20 bg-brand-500/10 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-surface-100">
+              {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+            </span>
+            <button
+              onClick={() => setSelectedPosts([])}
+              className="text-sm text-surface-400 hover:text-surface-200"
+            >
+              Clear selection
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Posts Table */}
       <div className="card overflow-hidden">
