@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         status: 'published' as const,
         post_type: 'ai_assisted' as const,
         original_source: archiveUrl,
-        published_at: extractedContent.published_at,
+        published_at: new Date().toISOString(), // Set current date for published imports
       })
       .select()
       .single();
