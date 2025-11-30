@@ -164,6 +164,101 @@ CREATE TABLE authors (
 
 ---
 
+## 🗺️ **Dynamic Sitemap & Robots.txt**
+
+### **What's New:**
+- Automatic XML sitemap generation
+- robots.txt configuration
+- Auto-update sitemap when posts are published
+- SEO optimization for search engines
+
+### **Features:**
+- **Dynamic Sitemap (`/sitemap.xml`):**
+  - Lists all published posts automatically
+  - Includes publication and update dates
+  - Supports both legacy PHP-style URLs and modern slugs
+  - Priority and change frequency hints for search engines
+  - Updates automatically when posts change
+
+- **Robots.txt (`/robots.txt`):**
+  - Allows search engine crawling
+  - Blocks AI training bots (GPTBot, Claude, etc.)
+  - Disallows admin and API routes
+  - Points to sitemap location
+
+### **How It Works:**
+
+**Automatic Updates:**
+The sitemap automatically regenerates when:
+1. A new post is published
+2. An existing post is updated
+3. A post is deleted
+4. Archive content is imported
+
+**What Gets Included:**
+- ✅ All posts with `status = 'published'`
+- ✅ Static pages (`/` and `/de`)
+- ✅ Post URLs with priority based on freshness
+- ❌ Draft posts excluded
+- ❌ Admin pages excluded
+
+### **URL Structure:**
+```
+https://ghanainsider.com/sitemap.xml
+https://ghanainsider.com/robots.txt
+```
+
+### **Sitemap Priority Levels:**
+- **1.0:** Homepage and `/de` page (highest)
+- **0.8:** Regular post pages
+- **0.7:** Legacy index.php URLs
+
+### **Change Frequency:**
+- Homepage: `daily`
+- Posts: `weekly`
+- Static pages: `daily`
+
+### **Files:**
+- Sitemap: `src/app/sitemap.ts`
+- Robots: `src/app/robots.ts`
+- Auto-update: Added to `src/app/api/posts/route.ts`
+
+### **Testing:**
+
+**Local Development:**
+```bash
+npm run dev
+# Visit:
+http://localhost:3000/sitemap.xml
+http://localhost:3000/robots.txt
+```
+
+**Production:**
+```bash
+# After deployment, verify:
+curl https://ghanainsider.com/sitemap.xml
+curl https://ghanainsider.com/robots.txt
+```
+
+### **Search Console Setup:**
+
+1. **Google Search Console:**
+   - Submit sitemap: `https://ghanainsider.com/sitemap.xml`
+   - Sitemaps → Add new sitemap
+
+2. **Bing Webmaster Tools:**
+   - Submit sitemap: `https://ghanainsider.com/sitemap.xml`
+   - Configure → Sitemaps
+
+### **Benefits:**
+- ✅ **Better SEO:** Search engines find all pages
+- ✅ **Faster indexing:** New posts indexed quickly
+- ✅ **No manual work:** Fully automatic
+- ✅ **AI bot control:** Block unwanted AI scrapers
+- ✅ **Standards compliant:** Follows sitemap protocol
+
+---
+
 ## 🔧 **Technical Changes**
 
 ### **New Dependencies:**

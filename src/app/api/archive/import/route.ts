@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { importFromArchive } from '@/lib/ai/formatter';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   const supabase = createServerClient();
@@ -152,6 +153,11 @@ export async function POST(request: NextRequest) {
           post_id: post.id,
         })
         .eq('id', importRecord.id);
+
+      // Revalidate paths to show new post
+      revalidatePath('/de');
+      revalidatePath('/de', 'page');
+      revalidatePath('/sitemap.xml');
     }
 
     return NextResponse.json({
