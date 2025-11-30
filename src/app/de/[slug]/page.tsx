@@ -123,12 +123,17 @@ export default async function ArticlePage({ params }: PageProps) {
   const readingTime = calculateReadingTime(post.content);
   const seo = post.seo_metadata;
 
+  // Extract text content for word count
+  const textContent = post.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const wordCount = textContent.split(' ').length;
+
   // Generate JSON-LD schema
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: post.title,
     description: seo?.meta_description || post.excerpt,
+    image: post.featured_image ? [post.featured_image] : undefined,
     datePublished: post.published_at,
     dateModified: post.updated_at,
     author: {
@@ -139,6 +144,7 @@ export default async function ArticlePage({ params }: PageProps) {
     publisher: {
       '@type': 'Organization',
       name: 'Ghana Insider',
+      url: 'https://ghanainsider.com',
       logo: {
         '@type': 'ImageObject',
         url: 'https://ghanainsider.com/logo.png',
@@ -148,6 +154,11 @@ export default async function ArticlePage({ params }: PageProps) {
       '@type': 'WebPage',
       '@id': `https://ghanainsider.com/de/${post.slug}`,
     },
+    articleBody: textContent.substring(0, 5000), // First 5000 chars for schema
+    wordCount: wordCount,
+    inLanguage: 'de-DE',
+    keywords: seo?.keywords?.join(', ') || undefined,
+    articleSection: post.categories?.name || undefined,
     ...seo?.schema_markup,
   };
 
