@@ -266,6 +266,13 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Get post slug before deleting so we can revalidate the specific paths
+    const { data: post } = await supabase
+      .from('posts')
+      .select('slug')
+      .eq('id', id)
+      .single();
+
     // Delete related records first to avoid foreign key constraints
 
     // 1. Delete SEO metadata
@@ -291,6 +298,13 @@ export async function DELETE(request: NextRequest) {
     // Revalidate homepage to remove deleted post
     revalidatePath('/de');
     revalidatePath('/de', 'page');
+
+    // Revalidate the specific post pages to ensure they show 404
+    if (post?.slug) {
+      // Handle both URL formats
+      revalidatePath(`/de/${post.slug}`);
+      revalidatePath(`/de/index.php/${post.slug.replace('index.php/', '')}`);
+    }
 
     return NextResponse.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
