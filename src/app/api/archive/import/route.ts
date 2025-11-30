@@ -30,6 +30,35 @@ export async function POST(request: NextRequest) {
 
     const originalUrl = archiveMatch[1];
 
+    // Check if this archive URL has been imported before
+    const { data: previousImports } = await supabase
+      .from('archive_imports')
+      .select('id, post_id, import_status')
+      .eq('archive_url', archiveUrl)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const previousImport = previousImports?.[0];
+
+    // If previously imported, check if the post still exists
+    if (previousImport?.post_id) {
+      const { data: existingPost } = await supabase
+        .from('posts')
+        .select('id, title, slug, status')
+        .eq('id', previousImport.post_id)
+        .single();
+
+      if (existingPost) {
+        // Post still exists - don't re-import
+        return NextResponse.json({
+          success: false,
+          message: `This archive URL was already imported as: "${existingPost.title}" (${existingPost.slug})`,
+          existing_post: existingPost,
+        }, { status: 409 }); // 409 Conflict
+      }
+      // Post was deleted - allow re-import
+    }
+
     // Create import record
     const { data: importRecord, error: importError } = await supabase
       .from('archive_imports')
@@ -54,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Process with scraper (NO AI - saves costs!)
     const extractedContent = await importFromArchive(htmlContent, originalUrl);
 
-    // Check if post with this slug already exists
+    // Check if post with this slug already exists (from a different archive URL)
     const { data: existingPost } = await supabase
       .from('posts')
       .select('id, title, slug, status')
@@ -62,19 +91,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingPost) {
-      // Post already exists - update import record and return
+      // Post with this slug exists from a different source - mark as failed
       await supabase
         .from('archive_imports')
         .update({
-          import_status: 'skipped' as const,
-          post_id: existingPost.id,
-          error_message: 'Post with this slug already exists',
+          import_status: 'failed' as const,
+          error_message: 'Post with this slug already exists from a different source',
         })
         .eq('id', importRecord.id);
 
       return NextResponse.json({
         success: false,
-        message: `Post already exists: "${existingPost.title}" (${existingPost.slug})`,
+        message: `A post with the slug "${extractedContent.slug}" already exists: "${existingPost.title}"`,
         existing_post: existingPost,
       }, { status: 409 }); // 409 Conflict
     }
@@ -96,7 +124,7 @@ export async function POST(request: NextRequest) {
         excerpt: extractedContent.excerpt,
         featured_image: extractedContent.featured_image,
         category_id: category?.id || null,
-        status: 'publish' as const,
+        status: 'published' as const,
         post_type: 'ai_assisted' as const,
         original_source: archiveUrl,
         published_at: extractedContent.published_at,
@@ -136,6 +164,34 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Archive import error:', error);
+
+    // If we have an import record, mark it as failed
+    if (error instanceof Error) {
+      // Try to find the most recent processing import for this URL
+      try {
+        const { data: processingImport } = await supabase
+          .from('archive_imports')
+          .select('id')
+          .eq('archive_url', archiveUrl)
+          .eq('import_status', 'processing')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (processingImport) {
+          await supabase
+            .from('archive_imports')
+            .update({
+              import_status: 'failed' as const,
+              error_message: error.message,
+            })
+            .eq('id', processingImport.id);
+        }
+      } catch (updateError) {
+        console.error('Failed to update import record:', updateError);
+      }
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to import from archive' },
       { status: 500 }
