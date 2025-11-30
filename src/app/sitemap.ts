@@ -60,12 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 function getStaticPages(): MetadataRoute.Sitemap {
   return [
     {
-      url: SITE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
-    {
       url: `${SITE_URL}/de`,
       lastModified: new Date(),
       changeFrequency: 'daily',
