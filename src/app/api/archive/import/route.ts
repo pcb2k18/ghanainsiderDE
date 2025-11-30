@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   const supabase = createServerClient();
+  let importRecordId: string | null = null;
 
   try {
     const body = await request.json();
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (importError) throw importError;
+    importRecordId = importRecord?.id || null;
 
     // Fetch content from archive.org
     const response = await fetch(archiveUrl);
@@ -172,27 +174,15 @@ export async function POST(request: NextRequest) {
     console.error('Archive import error:', error);
 
     // If we have an import record, mark it as failed
-    if (error instanceof Error) {
-      // Try to find the most recent processing import for this URL
+    if (error instanceof Error && importRecordId) {
       try {
-        const { data: processingImport } = await supabase
+        await supabase
           .from('archive_imports')
-          .select('id')
-          .eq('archive_url', archiveUrl)
-          .eq('import_status', 'processing')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (processingImport) {
-          await supabase
-            .from('archive_imports')
-            .update({
-              import_status: 'failed' as const,
-              error_message: error.message,
-            })
-            .eq('id', processingImport.id);
-        }
+          .update({
+            import_status: 'failed' as const,
+            error_message: error.message,
+          })
+          .eq('id', importRecordId);
       } catch (updateError) {
         console.error('Failed to update import record:', updateError);
       }
