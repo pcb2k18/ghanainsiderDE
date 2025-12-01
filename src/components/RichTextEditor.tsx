@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Code, Eye } from 'lucide-react';
 import 'react-quill/dist/quill.snow.css';
@@ -22,6 +22,7 @@ export default function RichTextEditor({
   minHeight = '400px',
 }: RichTextEditorProps) {
   const [viewMode, setViewMode] = useState<'visual' | 'html'>('visual');
+  const quillRef = useRef<any>(null);
 
   const modules = useMemo(() => ({
     toolbar: [
@@ -35,13 +36,6 @@ export default function RichTextEditor({
       ['blockquote', 'code-block'],
       ['clean'],
     ],
-    clipboard: {
-      matchVisual: false,
-      matchers: [
-        // Keep all pasted content as-is
-        ['*', (node: any, delta: any) => delta],
-      ],
-    },
   }), []);
 
   const formats = [
@@ -62,6 +56,73 @@ export default function RichTextEditor({
     'blockquote',
     'code-block',
   ];
+
+  // Fix paste issue - ensure text content is preserved
+  useEffect(() => {
+    if (!quillRef.current) return;
+
+    const quill = quillRef.current.getEditor?.();
+    if (!quill) return;
+
+    // Handle paste events to preserve text content
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      // Get HTML or plain text from clipboard
+      const html = clipboardData.getData('text/html');
+      const text = clipboardData.getData('text/plain');
+
+      const selection = quill.getSelection();
+      if (!selection) return;
+
+      if (html) {
+        // Convert HTML to Quill Delta format
+        const delta = quill.clipboard.convert(html);
+
+        // Delete any selected text first
+        if (selection.length > 0) {
+          quill.deleteText(selection.index, selection.length, 'user');
+        }
+
+        // Insert the converted delta at cursor position
+        quill.updateContents(
+          {
+            ops: [
+              { retain: selection.index },
+              ...delta.ops,
+            ],
+          },
+          'user'
+        );
+
+        // Calculate the length of inserted content
+        const insertLength = delta.ops.reduce((length, op) => {
+          if (typeof op.insert === 'string') {
+            return length + op.insert.length;
+          }
+          return length + 1; // For embeds like images
+        }, 0);
+
+        // Move cursor to end of pasted content
+        quill.setSelection(selection.index + insertLength, 0, 'user');
+      } else if (text) {
+        // Fallback to plain text
+        quill.deleteText(selection.index, selection.length, 'user');
+        quill.insertText(selection.index, text, 'user');
+        quill.setSelection(selection.index + text.length, 0, 'user');
+      }
+    };
+
+    const editor = quill.root;
+    editor.addEventListener('paste', handlePaste);
+
+    return () => {
+      editor.removeEventListener('paste', handlePaste);
+    };
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -97,6 +158,7 @@ export default function RichTextEditor({
       {viewMode === 'visual' ? (
         <div className="rich-text-editor">
           <ReactQuill
+            ref={quillRef}
             theme="snow"
             value={value}
             onChange={onChange}
