@@ -35,6 +35,9 @@ export default function RichTextEditor({
       ['blockquote', 'code-block'],
       ['clean'],
     ],
+    clipboard: {
+      matchVisual: false, // Preserve formatting when pasting
+    },
   };
 
   const formats = [

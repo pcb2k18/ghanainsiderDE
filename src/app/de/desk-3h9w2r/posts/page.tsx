@@ -351,7 +351,7 @@ export default function PostsPage() {
                   <td className="px-6 py-4">
                     <div className="max-w-md">
                       <Link
-                        href={`/admin/posts/${post.id}`}
+                        href={`/de/desk-3h9w2r/posts/${post.id}`}
                         className="font-medium text-surface-100 hover:text-brand-400"
                       >
                         {post.title}
@@ -393,7 +393,7 @@ export default function PostsPage() {
                         </a>
                       )}
                       <Link
-                        href={`/admin/posts/${post.id}`}
+                        href={`/de/desk-3h9w2r/posts/${post.id}`}
                         className="rounded-lg p-2 text-surface-400 transition-colors hover:bg-surface-800 hover:text-surface-100"
                         title="Edit"
                       >
