@@ -27,24 +27,28 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
               <Link
                 href="/de"
                 className="text-sm font-medium text-surface-400 transition-colors hover:text-surface-100"
+                suppressHydrationWarning
               >
                 Startseite
               </Link>
               <Link
                 href="/de/kategorie/tod"
                 className="text-sm font-medium text-surface-400 transition-colors hover:text-surface-100"
+                suppressHydrationWarning
               >
                 Nachruf
               </Link>
               <Link
                 href="/de/kategorie/breaking-news"
                 className="text-sm font-medium text-surface-400 transition-colors hover:text-surface-100"
+                suppressHydrationWarning
               >
                 Breaking News
               </Link>
               <Link
                 href="/de/kategorie/hochzeit"
                 className="text-sm font-medium text-surface-400 transition-colors hover:text-surface-100"
+                suppressHydrationWarning
               >
                 Hochzeit
               </Link>
