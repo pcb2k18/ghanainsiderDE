@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Code, Eye } from 'lucide-react';
 import 'react-quill/dist/quill.snow.css';
@@ -23,7 +23,7 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const [viewMode, setViewMode] = useState<'visual' | 'html'>('visual');
 
-  const modules = {
+  const modules = useMemo(() => ({
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
       ['bold', 'italic', 'underline', 'strike'],
@@ -36,9 +36,13 @@ export default function RichTextEditor({
       ['clean'],
     ],
     clipboard: {
-      matchVisual: false, // Preserve formatting when pasting
+      matchVisual: false,
+      matchers: [
+        // Keep all pasted content as-is
+        ['*', (node: any, delta: any) => delta],
+      ],
     },
-  };
+  }), []);
 
   const formats = [
     'header',
