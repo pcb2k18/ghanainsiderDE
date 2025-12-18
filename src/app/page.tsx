@@ -9,7 +9,7 @@ export default function Home() {
           Discover local businesses and services
         </p>
         <p className="text-lg text-slate-400">
-          We're building something amazing - a location-based directory to help you find the best places in your area.
+          We&apos;re building something amazing - a location-based directory to help you find the best places in your area.
         </p>
       </div>
     </div>
